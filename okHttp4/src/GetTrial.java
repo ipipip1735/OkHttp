@@ -15,13 +15,14 @@ import java.util.List;
  */
 public class GetTrial {
 
-    static private String URL = "http://192.168.1.100/cookie.php";
+//    static private String URL = "http://192.168.1.100/cookie.php";
 //    static private String URL = "https://docs.oracle.com/javase/8/docs/technotes/guides/language/generics.html";
+    static private String URL = "http://192.168.1.117:8000/prodpc/api/mission/00/2";
 
     public static void main(String[] args) {
 
         GetTrial getTrial = new GetTrial();
-        getTrial.get();
+//        getTrial.get();
         getTrial.getWithAuthorization();
 //        getTrial.getWithCookies();
 
@@ -57,6 +58,7 @@ public class GetTrial {
                 .build();
         Request request = new Request.Builder()
                 .get()
+                .header("Authorization", "bearer d80ee24d-68c5-484b-b560-ddc4aff389fe")
                 .url(URL)
                 .build();
         try (Response response = okHttpClient.newCall(request).execute()) {
