@@ -1,5 +1,6 @@
 import okhttp3.*;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -11,32 +12,60 @@ public class PostTrial {
 
         PostTrial postTrial = new PostTrial();
 
-//        postTrial.postText();
+        postTrial.postText();
 //        postTrial.postForm();
-        postTrial.postFile();
+//        postTrial.postFile();
 
+
+    }
+
+    private void postText() {
+
+
+        MediaType contentType = MediaType.parse("text/plain; charset=utf-8");
+//        System.out.println(contentType.type());
+//        System.out.println(contentType.subtype());
+//        System.out.println(contentType.parameter("charset"));
+
+
+
+        OkHttpClient client = new OkHttpClient();
+
+        Request request = new Request.Builder()
+                .url("http://localhost/post.php")
+                .post(RequestBody.create(new File("okHttp4/res/abcd"), contentType))
+                .build();
+
+        try {
+            System.out.println(new OkHttpClient().newCall(request).execute().body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
     private void postFile() {
 
 
-        MediaType MEDIA_TYPE_MARKDOWN = MediaType.parse("text/x-markdown; charset=utf-8");
+        MediaType contentType = MediaType.parse("text/plain; charset=utf-8");
+//        System.out.println(contentType.type());
+//        System.out.println(contentType.subtype());
+//        System.out.println(contentType.parameter("charset"));
 
+
+
+        OkHttpClient client = new OkHttpClient();
 
         Request request = new Request.Builder()
-                .url("https://api.github.com/markdown/raw")
-                .post(RequestBody.create(MEDIA_TYPE_MARKDOWN, file))
+                .url("http://localhost/post.php")
+                .post(RequestBody.create(new File("okHttp4/res/abcd"), contentType))
                 .build();
 
-
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
-
-            System.out.println(response.body().string());
+        try {
+            System.out.println(new OkHttpClient().newCall(request).execute().body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-
 
     }
 
