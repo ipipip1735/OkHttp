@@ -12,9 +12,58 @@ public class PostTrial {
 
         PostTrial postTrial = new PostTrial();
 
-        postTrial.postText();
-//        postTrial.postForm();
+//        postTrial.mediaType();
+
+
+//        postTrial.postText();
 //        postTrial.postFile();
+//        postTrial.postForm();
+        postTrial.multipart();
+
+
+    }
+
+    private void mediaType() {
+
+        MediaType contentType = MediaType.parse("application/x-www-form-urlencoded; charset=utf-8");
+        System.out.println(contentType.type());
+        System.out.println(contentType.subtype());
+        System.out.println(contentType.parameter("charset"));
+    }
+
+    private void multipart() {
+
+
+//        String url = "http://192.168.1.117:8000/msauthserver/oauth/token";
+        String url = "http://192.168.0.126/post.php";
+
+
+//        MediaType contentType = MediaType.parse("application/x-www-form-urlencoded; charset=utf-8");
+        MediaType contentType = MediaType.parse("image/png");
+
+        File file = new File("okHttp4/res/a.jpg");
+
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("title", "Square Logo")
+                .addFormDataPart("image", file.getName(), RequestBody.create(file, contentType))
+                .build();
+
+        Request request = new Request.Builder()
+                .header("Authorization", "xxx tttt")
+                .url(url)
+                .post(requestBody)
+                .build();
+
+
+        OkHttpClient client = new OkHttpClient();
+        try {
+
+            System.out.println(client.newCall(request).execute().body().string());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
 
     }
@@ -22,18 +71,11 @@ public class PostTrial {
     private void postText() {
 
 
-        MediaType contentType = MediaType.parse("text/plain; charset=utf-8");
-//        System.out.println(contentType.type());
-//        System.out.println(contentType.subtype());
-//        System.out.println(contentType.parameter("charset"));
-
-
-
-        OkHttpClient client = new OkHttpClient();
+        MediaType contentType = MediaType.parse("application/x-www-form-urlencoded; charset=utf-8");
 
         Request request = new Request.Builder()
-                .url("http://localhost/post.php")
-                .post(RequestBody.create(new File("okHttp4/res/abcd"), contentType))
+                .url("http://192.168.0.126/post.php")
+                .post(RequestBody.create("abcd", contentType))
                 .build();
 
         try {
@@ -47,17 +89,10 @@ public class PostTrial {
     private void postFile() {
 
 
-        MediaType contentType = MediaType.parse("text/plain; charset=utf-8");
-//        System.out.println(contentType.type());
-//        System.out.println(contentType.subtype());
-//        System.out.println(contentType.parameter("charset"));
-
-
-
-        OkHttpClient client = new OkHttpClient();
+        MediaType contentType = MediaType.parse("application/x-www-form-urlencoded; charset=utf-8");
 
         Request request = new Request.Builder()
-                .url("http://localhost/post.php")
+                .url("http://192.168.0.126/post.php")
                 .post(RequestBody.create(new File("okHttp4/res/abcd"), contentType))
                 .build();
 
@@ -73,18 +108,18 @@ public class PostTrial {
     private void postForm() {
 
 //        String url = "http://192.168.1.117:8000/msauthserver/oauth/token";
-        String url = "http://localhost/post.php";
+        String url = "http://192.168.0.126/post.php";
 
         RequestBody formBody = new FormBody.Builder()
                 .add("admin", "admin123")
                 .add("password", "admin123")
                 .add("grant_type", "password")
+                .addEncoded("urlEncoded", "!@#$%^&*()_<>")
                 .build();
 
         Request request = new Request.Builder()
                 .post(formBody)
-                .header("Authorization", "Basic RDgyRjgxMzRFMDFEMTFFOUE0RjM1MDQ2NUQ1NjAxQ0U6OTUyNjNFQTBFMDFFMTFFOUE0RjM1MDQ2NUQ1NjAxQ0U=")
-                .header("Content-Type", "application/x-www-form-urlencoded")
+//                .header("Authorization", "Basic RDgyRjgxMzRFMDFEMTFFOUE0RjM1MDQ2NUQ1NjAxQ0U6OTUyNjNFQTBFMDFFMTFFOUE0RjM1MDQ2NUQ1NjAxQ0U=")
                 .url(url)
                 .build();
 
