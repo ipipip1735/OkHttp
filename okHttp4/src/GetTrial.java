@@ -1,12 +1,12 @@
 import okhttp3.*;
-import okhttp3.Authenticator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.*;
-import java.time.Duration;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +18,9 @@ import java.util.concurrent.TimeUnit;
 public class GetTrial {
 
 //    static private String URL = "http://localhost/cookie.php";
-    static private String URL = "http://192.168.1.100/redirect.php";
+//    static private String URL = "http://localhost/cache.php";
+    static private String URL = "http://localhost/authorization.php";
+//    static private String URL = "http://192.168.1.100/redirect.php";
 //    static private String URL = "http://192.168.1.100/retry.php";
 //    static private String URL = "https://docs.oracle.com/javase/8/docs/technotes/guides/language/generics.html";
 //    static private String URL = "http://192.168.1.117:8000/prodpc/api/mission/00/2";
@@ -27,8 +29,8 @@ public class GetTrial {
     public static void main(String[] args) {
 
         GetTrial getTrial = new GetTrial();
-        getTrial.get();
-//        getTrial.getWithAuthorization();
+//        getTrial.get();
+        getTrial.getWithAuthorization();
 //        getTrial.getWithRetry();
 //        getTrial.getWithTimeout();
 //        getTrial.getWithCookies();
@@ -119,6 +121,16 @@ public class GetTrial {
 
     }
 
+    private int responseCount(Response response) {
+        System.out.println("~~responseCount~~");
+        int result = 1;
+        while ((response = response.priorResponse()) != null) {
+            System.out.println(result + "|response is " + response);
+            result++;
+        }
+        return result;
+    }
+
     private void getWithAuthorization() {
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
@@ -132,11 +144,17 @@ public class GetTrial {
                             return null;
                         }
 
+                        if (responseCount(response) >= 3) {
+                            return null;
+                        }
+
+
+
                         System.out.println("Challenges: " + response.challenges());
-                        String credential = Credentials.basic("jesse", "password1");
+                        String credential = Credentials.basic("jesse", "password");
 
                         return  response.request().newBuilder()
-                                .header("Authorization", credential)
+                                .header("Authorizatio1n", credential)
                                 .build();
                     }
                 })
@@ -156,6 +174,9 @@ public class GetTrial {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+
+
 
     }
 
@@ -478,10 +499,22 @@ public class GetTrial {
                 .build();
         Request request = new Request.Builder()
                 .get()
+//                .cacheControl(CacheControl.FORCE_CACHE)
                 .url(URL)
                 .build();
+
+
+
+
         try (Response response = okHttpClient.newCall(request).execute()) {
+
             System.out.println(response.body().string());
+
+            System.out.println("Response 2 response:          " + response);
+            System.out.println("Response 2 cache response:    " + response.cacheResponse());
+            System.out.println("Response 2 network response:  " + response.networkResponse());
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -598,7 +631,6 @@ public class GetTrial {
 
 
 //        okHttpClient.dispatcher().executorService().shutdown();
-
 
     }
 }

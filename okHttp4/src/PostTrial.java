@@ -107,11 +107,11 @@ public class PostTrial {
 
     private void postForm() {
 
-//        String url = "http://192.168.1.117:8000/msauthserver/oauth/token";
-        String url = "http://192.168.0.126/post.php";
+        String url = "http://192.168.1.117:8000/msauthserver/oauth/token";
+//        String url = "http://192.168.0.126/post.php";
 
         RequestBody formBody = new FormBody.Builder()
-                .add("admin", "admin123")
+                .add("username", "admin")
                 .add("password", "admin123")
                 .add("grant_type", "password")
                 .addEncoded("urlEncoded", "!@#$%^&*()_<>")
@@ -119,7 +119,7 @@ public class PostTrial {
 
         Request request = new Request.Builder()
                 .post(formBody)
-//                .header("Authorization", "Basic RDgyRjgxMzRFMDFEMTFFOUE0RjM1MDQ2NUQ1NjAxQ0U6OTUyNjNFQTBFMDFFMTFFOUE0RjM1MDQ2NUQ1NjAxQ0U=")
+                .header("Authorization", "Basic RDgyRjgxMzRFMDFEMTFFOUE0RjM1MDQ2NUQ1NjAxQ0U6OTUyNjNFQTBFMDFFMTFFOUE0RjM1MDQ2NUQ1NjAxQ0U=")
                 .url(url)
                 .build();
 
