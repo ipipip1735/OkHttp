@@ -17,9 +17,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class GetTrial {
 
-//    static private String URL = "http://localhost/cookie.php";
+    //    static private String URL = "http://localhost/cookie.php";
 //    static private String URL = "http://localhost/cache.php";
     static private String URL = "http://localhost/authorization.php";
+//    static private String URL = "http://localhost/get.php";
 //    static private String URL = "http://192.168.1.100/redirect.php";
 //    static private String URL = "http://192.168.1.100/retry.php";
 //    static private String URL = "https://docs.oracle.com/javase/8/docs/technotes/guides/language/generics.html";
@@ -57,7 +58,6 @@ public class GetTrial {
                 .build();
 
         okHttpClient.connectionPool().evictAll();
-
 
 
         try (Response response = okHttpClient.newCall(request).execute()) {
@@ -148,12 +148,10 @@ public class GetTrial {
                             return null;
                         }
 
-
-
                         System.out.println("Challenges: " + response.challenges());
                         String credential = Credentials.basic("jesse", "password");
 
-                        return  response.request().newBuilder()
+                        return response.request().newBuilder()
                                 .header("Authorizatio1n", credential)
                                 .build();
                     }
@@ -168,14 +166,11 @@ public class GetTrial {
                 .build();
 
 
-
         try (Response response = okHttpClient.newCall(request).execute()) {
             System.out.println(response.body().string());
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
 
 
     }
@@ -244,10 +239,6 @@ public class GetTrial {
         }
 
 
-
-
-
-
         //使用网络拦截器
 //        OkHttpClient client = new OkHttpClient.Builder()
 //                .addNetworkInterceptor(new Interceptor() {
@@ -272,7 +263,6 @@ public class GetTrial {
 //
 //        Response response = client.newCall(request).execute();
 //        response.body().close();
-
 
 
     }
@@ -468,7 +458,6 @@ public class GetTrial {
         }
 
 
-
         //方式二
 //        OkHttpClient okHttpClient = new OkHttpClient.Builder()
 //                .eventListenerFactory(new EventListener.Factory() {
@@ -502,8 +491,6 @@ public class GetTrial {
 //                .cacheControl(CacheControl.FORCE_CACHE)
                 .url(URL)
                 .build();
-
-
 
 
         try (Response response = okHttpClient.newCall(request).execute()) {
@@ -575,40 +562,31 @@ public class GetTrial {
 
     private void get() {
 
-        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .build();
-        Request request = new Request.Builder()
-                .get()
-//                .method("GET", null)
-                .header("one", "111")
-                .addHeader("two", "222")
-                .url(URL)
-                .build();
-
-
         //同步请求
-//        try (Response response = okHttpClient.newCall(request).execute()) {
+//        OkHttpClient okHttpClient = new OkHttpClient();
+//        Request request = new Request.Builder()
+//                .get()
+////                .method("GET", null)
+//                .header("one", "111")
+//                .addHeader("two", "222")
+//                .url(URL)
+//                .build();
+//
+//
+//        Call call = okHttpClient.newCall(request);
+//
+//        try (Response response = call.execute()) {
+//            System.out.println(response.headers());
 //            System.out.println(response.body().string());
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
 
 
-
         //异步请求
-        okHttpClient.dispatcher().setIdleCallback(new Runnable() {
-            @Override
-            public void run() {
-                System.out.println("~~idleCallback.run~~");
-            }
-        });
-        for (int i = 0; i < 3; i++) {
+        OkHttpClient okHttpClient = new OkHttpClient();
+        Request request = new Request.Builder().get().url(URL).build();
 
-            try {
-                Thread.sleep(1500L);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
 
         okHttpClient.newCall(request).enqueue(new Callback() {
             @Override
@@ -627,7 +605,29 @@ public class GetTrial {
                 System.out.println(response.body().string());
             }
         });
-        }
+
+
+
+
+
+
+
+//        okHttpClient.dispatcher().setIdleCallback(new Runnable() {
+//            @Override
+//            public void run() {
+//                System.out.println("~~idleCallback.run~~");
+//            }
+//        });
+//        for (int i = 0; i < 3; i++) {
+//
+//            try {
+//                Thread.sleep(1500L);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//
+//
+//        }
 
 
 //        okHttpClient.dispatcher().executorService().shutdown();
