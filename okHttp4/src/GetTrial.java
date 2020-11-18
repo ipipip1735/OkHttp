@@ -1,4 +1,5 @@
 import okhttp3.*;
+import okhttp3.EventListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -7,9 +8,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -19,8 +19,8 @@ public class GetTrial {
 
     //    static private String URL = "http://localhost/cookie.php";
 //    static private String URL = "http://localhost/cache.php";
-    static private String URL = "http://localhost/authorization.php";
-//    static private String URL = "http://localhost/get.php";
+//    static private String URL = "http://localhost/authorization.php";
+    static private String URL = "http://192.168.1.100/get.php";
 //    static private String URL = "http://192.168.1.100/redirect.php";
 //    static private String URL = "http://192.168.1.100/retry.php";
 //    static private String URL = "https://docs.oracle.com/javase/8/docs/technotes/guides/language/generics.html";
@@ -31,14 +31,14 @@ public class GetTrial {
 
         GetTrial getTrial = new GetTrial();
 //        getTrial.get();
-        getTrial.getWithAuthorization();
+//        getTrial.getWithAuthorization();
 //        getTrial.getWithRetry();
 //        getTrial.getWithTimeout();
 //        getTrial.getWithCookies();
 
 //        getTrial.getConnectionPool();
 //        getTrial.getWithCache();
-//        getTrial.getWithEventListener();
+        getTrial.getWithEventListener();
 //        getTrial.getWithInterceptors();
 
     }
@@ -97,15 +97,17 @@ public class GetTrial {
         String URL = "http://192.168.1.0/retry.php";
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .retryOnConnectionFailure(true)
-//                .eventListener(new EventListener() {
-//                    @Override
-//                    public void connectFailed(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, @Nullable Protocol protocol, @NotNull IOException ioe) {
-//                        System.out.println("~~connectFailed~~");
-//                        super.connectFailed(call, inetSocketAddress, proxy, protocol, ioe);
-//                    }
-//                })
-//                .connectTimeout(1000L, TimeUnit.MICROSECONDS)
+//                .retryOnConnectionFailure(true)
+                .eventListener(new EventListener() {
+                    @Override
+                    public void connectFailed(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, @Nullable Protocol protocol, @NotNull IOException ioe) {
+                        System.out.println("~~connectFailed~~");
+                        super.connectFailed(call, inetSocketAddress, proxy, protocol, ioe);
+
+
+                    }
+                })
+                .connectTimeout(1000L, TimeUnit.MICROSECONDS)
                 .build();
 
         Request request = new Request.Builder()
@@ -139,20 +141,23 @@ public class GetTrial {
                     @Override
                     public Request authenticate(@Nullable Route route, @NotNull Response response) throws IOException {
                         System.out.println("~~authenticate~~");
+                        System.out.println("route = " + route);
+                        System.out.println("response = " + response);
 
                         if (response.request().header("Authorization") != null) {
                             return null;
                         }
 
+                        System.out.println("Challenges: " + response.challenges());
+
                         if (responseCount(response) >= 3) {
                             return null;
                         }
 
-                        System.out.println("Challenges: " + response.challenges());
                         String credential = Credentials.basic("jesse", "password");
 
                         return response.request().newBuilder()
-                                .header("Authorizatio1n", credential)
+                                .header("Authorization", credential)
                                 .build();
                     }
                 })
@@ -446,6 +451,7 @@ public class GetTrial {
                         super.secureConnectStart(call);
                     }
                 })
+                .retryOnConnectionFailure(true)
                 .build();
         Request request = new Request.Builder()
                 .get()
@@ -464,7 +470,6 @@ public class GetTrial {
 //                    @NotNull
 //                    @Override
 //                    public EventListener create(@NotNull Call call) {
-//
 //                        return null;
 //                    }
 //                })
@@ -605,11 +610,6 @@ public class GetTrial {
                 System.out.println(response.body().string());
             }
         });
-
-
-
-
-
 
 
 //        okHttpClient.dispatcher().setIdleCallback(new Runnable() {
