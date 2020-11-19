@@ -20,12 +20,10 @@ public class GetTrial {
     //    static private String URL = "http://localhost/cookie.php";
 //    static private String URL = "http://localhost/cache.php";
 //    static private String URL = "http://localhost/authorization.php";
-    static private String URL = "http://192.168.1.100/get.php";
-//    static private String URL = "http://192.168.1.100/redirect.php";
-//    static private String URL = "http://192.168.1.100/retry.php";
+//    static private String URL = "http://localhost/get.php";
+//    static private String URL = "http://localhost/redirect.php";
+    static private String URL = "http://localhost/retry.php";
 //    static private String URL = "https://docs.oracle.com/javase/8/docs/technotes/guides/language/generics.html";
-//    static private String URL = "http://192.168.1.117:8000/prodpc/api/mission/00/2";
-//    static private String URL = "http://192.168.0.117:8000/msauthserver/oauth/token";
 
     public static void main(String[] args) {
 
@@ -33,13 +31,33 @@ public class GetTrial {
 //        getTrial.get();
 //        getTrial.getWithAuthorization();
 //        getTrial.getWithRetry();
-//        getTrial.getWithTimeout();
+//        getTrial.getWithRedirect();
+        getTrial.getWithTimeout();
 //        getTrial.getWithCookies();
 
 //        getTrial.getConnectionPool();
 //        getTrial.getWithCache();
-        getTrial.getWithEventListener();
+//        getTrial.getWithEventListener();
 //        getTrial.getWithInterceptors();
+
+    }
+
+    private void getWithRedirect() {
+
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .eventListener(new TheEventListener())
+                .build();
+
+        Request request = new Request.Builder()
+                .get()
+                .url(URL)
+                .build();
+
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            System.out.println(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -70,14 +88,11 @@ public class GetTrial {
     }
 
     private void getWithTimeout() {
-
-        String URL = "http://192.168.1.0/retry.php";
-
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-//                .connectTimeout(1000L, TimeUnit.MICROSECONDS)
-//                .readTimeout(1000L, TimeUnit.MICROSECONDS)
-//                .writeTimeout(1000L, TimeUnit.MICROSECONDS)
-//                .callTimeout(1000L, TimeUnit.MICROSECONDS)
+                .connectTimeout(1000L, TimeUnit.MICROSECONDS)
+                .readTimeout(1000L, TimeUnit.MICROSECONDS)
+                .writeTimeout(1000L, TimeUnit.MICROSECONDS)
+                .callTimeout(1000L, TimeUnit.MICROSECONDS)
                 .build();
 
         Request request = new Request.Builder()
@@ -93,21 +108,9 @@ public class GetTrial {
     }
 
     private void getWithRetry() {
-
-        String URL = "http://192.168.1.0/retry.php";
-
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-//                .retryOnConnectionFailure(true)
-                .eventListener(new EventListener() {
-                    @Override
-                    public void connectFailed(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, @Nullable Protocol protocol, @NotNull IOException ioe) {
-                        System.out.println("~~connectFailed~~");
-                        super.connectFailed(call, inetSocketAddress, proxy, protocol, ioe);
-
-
-                    }
-                })
-                .connectTimeout(1000L, TimeUnit.MICROSECONDS)
+                //.retryOnConnectionFailure(false)
+                .eventListener(new TheEventListener())
                 .build();
 
         Request request = new Request.Builder()
@@ -274,184 +277,10 @@ public class GetTrial {
 
     private void getWithEventListener() {
 
-        //方式一
+        //方式一：使用EventListener
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .eventListener(new EventListener() {
-                    @Override
-                    public void cacheConditionalHit(@NotNull Call call, @NotNull Response cachedResponse) {
-                        System.out.println("~~EventListener.cacheConditionalHit~~");
-                        super.cacheConditionalHit(call, cachedResponse);
-                    }
-
-                    @Override
-                    public void cacheHit(@NotNull Call call, @NotNull Response response) {
-                        System.out.println("~~EventListener.cacheHit~~");
-                        super.cacheHit(call, response);
-                    }
-
-                    @Override
-                    public void cacheMiss(@NotNull Call call) {
-                        System.out.println("~~EventListener.cacheMiss~~");
-                        super.cacheMiss(call);
-                    }
-
-                    @Override
-                    public void callEnd(@NotNull Call call) {
-                        System.out.println("~~EventListener.callEnd~~");
-                        super.callEnd(call);
-                    }
-
-                    @Override
-                    public void callFailed(@NotNull Call call, @NotNull IOException ioe) {
-                        System.out.println("~~EventListener.callFailed~~");
-                        super.callFailed(call, ioe);
-                    }
-
-                    @Override
-                    public void callStart(@NotNull Call call) {
-                        System.out.println("~~EventListener.callStart~~");
-                        super.callStart(call);
-                    }
-
-                    @Override
-                    public void canceled(@NotNull Call call) {
-                        System.out.println("~~EventListener.canceled~~");
-                        super.canceled(call);
-                    }
-
-                    @Override
-                    public void connectEnd(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, @Nullable Protocol protocol) {
-                        System.out.println("~~EventListener.connectEnd~~");
-                        super.connectEnd(call, inetSocketAddress, proxy, protocol);
-                    }
-
-                    @Override
-                    public void connectFailed(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, @Nullable Protocol protocol, @NotNull IOException ioe) {
-                        System.out.println("~~EventListener.connectFailed~~");
-                        super.connectFailed(call, inetSocketAddress, proxy, protocol, ioe);
-                    }
-
-                    @Override
-                    public void connectStart(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy) {
-                        System.out.println("~~EventListener.connectStart~~");
-                        super.connectStart(call, inetSocketAddress, proxy);
-                    }
-
-                    @Override
-                    public void connectionAcquired(@NotNull Call call, @NotNull Connection connection) {
-                        System.out.println("~~EventListener.connectionAcquired~~");
-                        super.connectionAcquired(call, connection);
-                    }
-
-                    @Override
-                    public void connectionReleased(@NotNull Call call, @NotNull Connection connection) {
-                        System.out.println("~~EventListener.connectionReleased~~");
-                        super.connectionReleased(call, connection);
-                    }
-
-                    @Override
-                    public void dnsEnd(@NotNull Call call, @NotNull String domainName, @NotNull List<InetAddress> inetAddressList) {
-                        System.out.println("~~EventListener.dnsEnd~~");
-                        super.dnsEnd(call, domainName, inetAddressList);
-                    }
-
-                    @Override
-                    public void dnsStart(@NotNull Call call, @NotNull String domainName) {
-                        System.out.println("~~EventListener.dnsStart~~");
-                        super.dnsStart(call, domainName);
-                    }
-
-                    @Override
-                    public void proxySelectEnd(@NotNull Call call, @NotNull HttpUrl url, @NotNull List<Proxy> proxies) {
-                        System.out.println("~~EventListener.proxySelectEnd~~");
-                        super.proxySelectEnd(call, url, proxies);
-                    }
-
-                    @Override
-                    public void proxySelectStart(@NotNull Call call, @NotNull HttpUrl url) {
-                        System.out.println("~~EventListener.proxySelectStart~~");
-                        super.proxySelectStart(call, url);
-                    }
-
-                    @Override
-                    public void requestBodyEnd(@NotNull Call call, long byteCount) {
-                        System.out.println("~~EventListener.requestBodyEnd~~");
-                        super.requestBodyEnd(call, byteCount);
-                    }
-
-                    @Override
-                    public void requestBodyStart(@NotNull Call call) {
-                        System.out.println("~~EventListener.requestBodyStart~~");
-                        super.requestBodyStart(call);
-                    }
-
-                    @Override
-                    public void requestFailed(@NotNull Call call, @NotNull IOException ioe) {
-                        System.out.println("~~EventListener.requestFailed~~");
-                        super.requestFailed(call, ioe);
-                    }
-
-                    @Override
-                    public void requestHeadersEnd(@NotNull Call call, @NotNull Request request) {
-                        System.out.println("~~EventListener.requestHeadersEnd~~");
-                        super.requestHeadersEnd(call, request);
-                    }
-
-                    @Override
-                    public void requestHeadersStart(@NotNull Call call) {
-                        System.out.println("~~EventListener.requestHeadersStart~~");
-                        super.requestHeadersStart(call);
-                    }
-
-                    @Override
-                    public void responseBodyEnd(@NotNull Call call, long byteCount) {
-                        System.out.println("~~EventListener.responseBodyEnd~~");
-                        super.responseBodyEnd(call, byteCount);
-                    }
-
-                    @Override
-                    public void responseBodyStart(@NotNull Call call) {
-                        System.out.println("~~EventListener.responseBodyStart~~");
-                        super.responseBodyStart(call);
-                    }
-
-                    @Override
-                    public void responseFailed(@NotNull Call call, @NotNull IOException ioe) {
-                        System.out.println("~~EventListener.responseFailed~~");
-                        super.responseFailed(call, ioe);
-                    }
-
-                    @Override
-                    public void responseHeadersEnd(@NotNull Call call, @NotNull Response response) {
-                        System.out.println("~~EventListener.responseHeadersEnd~~");
-                        super.responseHeadersEnd(call, response);
-                    }
-
-                    @Override
-                    public void responseHeadersStart(@NotNull Call call) {
-                        System.out.println("~~EventListener.responseHeadersStart~~");
-                        super.responseHeadersStart(call);
-                    }
-
-                    @Override
-                    public void satisfactionFailure(@NotNull Call call, @NotNull Response response) {
-                        System.out.println("~~EventListener.satisfactionFailure~~");
-                        super.satisfactionFailure(call, response);
-                    }
-
-                    @Override
-                    public void secureConnectEnd(@NotNull Call call, @Nullable Handshake handshake) {
-                        System.out.println("~~EventListener.secureConnectEnd~~");
-                        super.secureConnectEnd(call, handshake);
-                    }
-
-                    @Override
-                    public void secureConnectStart(@NotNull Call call) {
-                        System.out.println("~~EventListener.secureConnectStart~~");
-                        super.secureConnectStart(call);
-                    }
-                })
-                .retryOnConnectionFailure(true)
+//                .eventListener(EventListener.NONE)//使用空监听器
+                .eventListener(new TheEventListener())
                 .build();
         Request request = new Request.Builder()
                 .get()
@@ -464,13 +293,13 @@ public class GetTrial {
         }
 
 
-        //方式二
+        //方式二：使用监听器工厂
 //        OkHttpClient okHttpClient = new OkHttpClient.Builder()
 //                .eventListenerFactory(new EventListener.Factory() {
 //                    @NotNull
 //                    @Override
 //                    public EventListener create(@NotNull Call call) {
-//                        return null;
+//                        return new TheEventListener();
 //                    }
 //                })
 //                .build();
@@ -632,5 +461,207 @@ public class GetTrial {
 
 //        okHttpClient.dispatcher().executorService().shutdown();
 
+    }
+
+
+
+
+
+    class TheEventListener extends EventListener{
+
+
+        @Override
+        public void cacheConditionalHit(@NotNull Call call, @NotNull Response cachedResponse) {
+            System.out.println("~~EventListener.cacheConditionalHit~~");
+            super.cacheConditionalHit(call, cachedResponse);
+        }
+
+        @Override
+        public void cacheHit(@NotNull Call call, @NotNull Response response) {
+            System.out.println("~~EventListener.cacheHit~~");
+            super.cacheHit(call, response);
+        }
+
+        @Override
+        public void cacheMiss(@NotNull Call call) {
+            System.out.println("~~EventListener.cacheMiss~~");
+            super.cacheMiss(call);
+        }
+
+        @Override
+        public void callEnd(@NotNull Call call) {
+            System.out.println("~~EventListener.callEnd~~");
+            super.callEnd(call);
+        }
+
+        @Override
+        public void callFailed(@NotNull Call call, @NotNull IOException ioe) {
+            System.out.println("~~EventListener.callFailed~~");
+            super.callFailed(call, ioe);
+        }
+
+        @Override
+        public void callStart(@NotNull Call call) {
+            System.out.println("~~EventListener.callStart~~");
+            super.callStart(call);
+        }
+
+        @Override
+        public void canceled(@NotNull Call call) {
+            System.out.println("~~EventListener.canceled~~");
+            super.canceled(call);
+        }
+
+        @Override
+        public void connectEnd(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, @Nullable Protocol protocol) {
+            System.out.println("~~EventListener.connectEnd~~");
+            super.connectEnd(call, inetSocketAddress, proxy, protocol);
+        }
+
+        @Override
+        public void connectFailed(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, @Nullable Protocol protocol, @NotNull IOException ioe) {
+            System.out.println("~~EventListener.connectFailed~~");
+            System.out.println("call = " + call + ", inetSocketAddress = " + inetSocketAddress + ", proxy = " + proxy + ", protocol = " + protocol + ", ioe = " + ioe);
+            super.connectFailed(call, inetSocketAddress, proxy, protocol, ioe);
+        }
+
+        @Override
+        public void connectStart(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy) {
+            System.out.println("~~EventListener.connectStart~~");
+            super.connectStart(call, inetSocketAddress, proxy);
+        }
+
+        @Override
+        public void connectionAcquired(@NotNull Call call, @NotNull Connection connection) {
+            System.out.println("~~EventListener.connectionAcquired~~");
+            super.connectionAcquired(call, connection);
+        }
+
+        @Override
+        public void connectionReleased(@NotNull Call call, @NotNull Connection connection) {
+            System.out.println("~~EventListener.connectionReleased~~");
+            super.connectionReleased(call, connection);
+        }
+
+        @Override
+        public void dnsEnd(@NotNull Call call, @NotNull String domainName, @NotNull List<InetAddress> inetAddressList) {
+            System.out.println("~~EventListener.dnsEnd~~");
+            super.dnsEnd(call, domainName, inetAddressList);
+        }
+
+        @Override
+        public void dnsStart(@NotNull Call call, @NotNull String domainName) {
+            System.out.println("~~EventListener.dnsStart~~");
+            super.dnsStart(call, domainName);
+        }
+
+        @Override
+        public void proxySelectEnd(@NotNull Call call, @NotNull HttpUrl url, @NotNull List<Proxy> proxies) {
+            System.out.println("~~EventListener.proxySelectEnd~~");
+            super.proxySelectEnd(call, url, proxies);
+        }
+
+        @Override
+        public void proxySelectStart(@NotNull Call call, @NotNull HttpUrl url) {
+            System.out.println("~~EventListener.proxySelectStart~~");
+            super.proxySelectStart(call, url);
+        }
+
+        @Override
+        public void requestBodyEnd(@NotNull Call call, long byteCount) {
+            System.out.println("~~EventListener.requestBodyEnd~~");
+            super.requestBodyEnd(call, byteCount);
+        }
+
+        @Override
+        public void requestBodyStart(@NotNull Call call) {
+            System.out.println("~~EventListener.requestBodyStart~~");
+            super.requestBodyStart(call);
+        }
+
+        @Override
+        public void requestFailed(@NotNull Call call, @NotNull IOException ioe) {
+            System.out.println("~~EventListener.requestFailed~~");
+            super.requestFailed(call, ioe);
+        }
+
+        @Override
+        public void requestHeadersEnd(@NotNull Call call, @NotNull Request request) {
+            System.out.println("~~EventListener.requestHeadersEnd~~");
+            super.requestHeadersEnd(call, request);
+        }
+
+        @Override
+        public void requestHeadersStart(@NotNull Call call) {
+            System.out.println("~~EventListener.requestHeadersStart~~");
+            super.requestHeadersStart(call);
+        }
+
+        @Override
+        public void responseBodyEnd(@NotNull Call call, long byteCount) {
+            System.out.println("~~EventListener.responseBodyEnd~~");
+            super.responseBodyEnd(call, byteCount);
+        }
+
+        @Override
+        public void responseBodyStart(@NotNull Call call) {
+            System.out.println("~~EventListener.responseBodyStart~~");
+            super.responseBodyStart(call);
+        }
+
+        @Override
+        public void responseFailed(@NotNull Call call, @NotNull IOException ioe) {
+            System.out.println("~~EventListener.responseFailed~~");
+            super.responseFailed(call, ioe);
+        }
+
+        @Override
+        public void responseHeadersEnd(@NotNull Call call, @NotNull Response response) {
+            System.out.println("~~EventListener.responseHeadersEnd~~");
+            super.responseHeadersEnd(call, response);
+        }
+
+        @Override
+        public void responseHeadersStart(@NotNull Call call) {
+            System.out.println("~~EventListener.responseHeadersStart~~");
+            super.responseHeadersStart(call);
+        }
+
+        @Override
+        public void satisfactionFailure(@NotNull Call call, @NotNull Response response) {
+            System.out.println("~~EventListener.satisfactionFailure~~");
+            super.satisfactionFailure(call, response);
+        }
+
+        @Override
+        public void secureConnectEnd(@NotNull Call call, @Nullable Handshake handshake) {
+            System.out.println("~~EventListener.secureConnectEnd~~");
+            super.secureConnectEnd(call, handshake);
+        }
+
+        @Override
+        public void secureConnectStart(@NotNull Call call) {
+            System.out.println("~~EventListener.secureConnectStart~~");
+            super.secureConnectStart(call);
+        }
+
+    }
+
+
+    class CallBack implements Callback{
+
+        @Override
+        public void onFailure(@NotNull Call call, @NotNull IOException e) {
+            System.out.println("~~CallBack.onFailure~~");
+            System.out.println("call = " + call + ", e = " + e);
+            e.printStackTrace();
+        }
+
+        @Override
+        public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+            System.out.println("~~CallBack.onResponse~~");
+            System.out.println("call = " + call + ", response = " + response);
+
+        }
     }
 }
