@@ -1,5 +1,4 @@
 import okhttp3.*;
-import okhttp3.EventListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -8,7 +7,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -20,9 +18,9 @@ public class GetTrial {
     //    static private String URL = "http://localhost/cookie.php";
 //    static private String URL = "http://localhost/cache.php";
 //    static private String URL = "http://localhost/authorization.php";
-//    static private String URL = "http://localhost/get.php";
+    static private String URL = "http://localhost/get.php";
 //    static private String URL = "http://localhost/redirect.php";
-    static private String URL = "http://localhost/retry.php";
+//    static private String URL = "http://localhost/retry.php";
 //    static private String URL = "https://docs.oracle.com/javase/8/docs/technotes/guides/language/generics.html";
 
     public static void main(String[] args) {
@@ -32,20 +30,21 @@ public class GetTrial {
 //        getTrial.getWithAuthorization();
 //        getTrial.getWithRetry();
 //        getTrial.getWithRedirect();
-        getTrial.getWithTimeout();
+//        getTrial.getWithTimeout();
 //        getTrial.getWithCookies();
 
 //        getTrial.getConnectionPool();
 //        getTrial.getWithCache();
 //        getTrial.getWithEventListener();
-//        getTrial.getWithInterceptors();
+        getTrial.getWithInterceptors();
+
 
     }
 
     private void getWithRedirect() {
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .eventListener(new TheEventListener())
+                .eventListener(new EventListener())
                 .build();
 
         Request request = new Request.Builder()
@@ -110,7 +109,7 @@ public class GetTrial {
     private void getWithRetry() {
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 //.retryOnConnectionFailure(false)
-                .eventListener(new TheEventListener())
+                .eventListener(new EventListener())
                 .build();
 
         Request request = new Request.Builder()
@@ -153,9 +152,9 @@ public class GetTrial {
 
                         System.out.println("Challenges: " + response.challenges());
 
-                        if (responseCount(response) >= 3) {
-                            return null;
-                        }
+//                        if (responseCount(response) >= 3) {
+//                            return null;
+//                        }
 
                         String credential = Credentials.basic("jesse", "password");
 
@@ -164,6 +163,7 @@ public class GetTrial {
                                 .build();
                     }
                 })
+                .eventListener(new EventListener())
                 .build();
 
 
@@ -185,92 +185,63 @@ public class GetTrial {
 
     private void getWithInterceptors() {
 
-        //使用应用拦截器
-        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .addNetworkInterceptor(new Interceptor() {
-                    @NotNull
-                    @Override
-                    public Response intercept(@NotNull Chain chain) throws IOException {
-                        System.out.println("~~addNetworkInterceptor.intercept1~~");
-                        System.out.println("chain is " + chain);
-
-                        Request request = chain.request();
-                        System.out.println("network-1|chain.connection is " + chain.connection());
-                        System.out.println("network-1|request.url is " + request.url());
-                        System.out.println("network-1|request.headers is " + request.headers());
-                        System.out.println("network-1|request.body is " + request.body());
-
-                        Response response = chain.proceed(request);
-                        System.out.println("network-2|chain.connection is " + chain.connection());
-                        System.out.println("network-2|request.url is " + request.url());
-                        System.out.println("network-2|request.headers is " + request.headers());
-                        System.out.println("network-2|request.body is " + request.body());
-                        System.out.println("network-2|response.body is " + response.body());
+        //例一：基本使用
+//        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+//                .addNetworkInterceptor(new Interceptor("NetworkInterceptor"))
+//                .addInterceptor(new Interceptor("Interceptor"))
+//                .build();
+//        Request request = new Request.Builder()
+//                .get()
+//                .url(URL)
+//                .build();
+//        try (Response response = okHttpClient.newCall(request).execute()) {
+//            System.out.println(response.body().string());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
 
-                        return response;
-                    }
-                })
-                .addInterceptor(new Interceptor() {
-                    @NotNull
-                    @Override
-                    public Response intercept(@NotNull Chain chain) throws IOException {
-                        System.out.println("~~addInterceptor.intercept2~~");
-                        System.out.println("chain is " + chain);
+        //例二：拦截器链
+//        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+//                .addNetworkInterceptor(new Interceptor("NetworkInterceptorOne"))
+//                .addNetworkInterceptor(new Interceptor("NetworkInterceptorTwo"))
+//                .build();
+//        Request request = new Request.Builder()
+//                .get()
+//                .url(URL)
+//                .build();
+//        try (Response response = okHttpClient.newCall(request).execute()) {
+//            System.out.println(response.body().string());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
 
-                        Request request = chain.request();
-                        System.out.println("application-1|chain.connection is " + chain.connection());
-                        System.out.println("application-1|request.url is " + request.url());
-                        System.out.println("application-1|request.headers is " + request.headers());
-                        System.out.println("application-1|request.body is " + request.body());
-
-                        Response response = chain.proceed(request);
-                        System.out.println("application-2|chain.connection is " + chain.connection());
-                        System.out.println("application-2|request.url is " + request.url());
-                        System.out.println("application-2|request.headers is " + request.headers());
-                        System.out.println("application-2|request.body is " + request.body());
-                        System.out.println("application-2|response.body is " + response.body());
-
-                        return response;
-                    }
-                })
-                .build();
-        Request request = new Request.Builder()
-                .get()
-                .url(URL)
-                .build();
-        try (Response response = okHttpClient.newCall(request).execute()) {
-            System.out.println(response.body().string());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-        //使用网络拦截器
-//        OkHttpClient client = new OkHttpClient.Builder()
-//                .addNetworkInterceptor(new Interceptor() {
+        //处理请求主体
+        OkHttpClient client = new OkHttpClient.Builder()
+//                .post()
+//                .addNetworkInterceptor(new okhttp3.Interceptor() {
 //                    @NotNull
 //                    @Override
 //                    public Response intercept(@NotNull Chain chain) throws IOException {
 //                        System.out.println("~~intercept~~");
 //                        System.out.println(chain);
 //
-//                        chain.
+//
 //
 //
 //                        return null;
 //                    }
 //                })
-//                .build();
-//
-//        Request request = new Request.Builder()
-//                .url("http://www.publicobject.com/helloworld.txt")
-//                .header("User-Agent", "OkHttp Example")
-//                .build();
-//
-//        Response response = client.newCall(request).execute();
-//        response.body().close();
+                .build();
+
+        Request request = new Request.Builder()
+                .url("http://www.publicobject.com/helloworld.txt")
+                .header("User-Agent", "OkHttp Example")
+                .build();
+
+        Response response = client.newCall(request).execute();
+        response.body().close();
 
 
     }
@@ -280,7 +251,7 @@ public class GetTrial {
         //方式一：使用EventListener
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
 //                .eventListener(EventListener.NONE)//使用空监听器
-                .eventListener(new TheEventListener())
+                .eventListener(new EventListener())
                 .build();
         Request request = new Request.Builder()
                 .get()
@@ -464,10 +435,7 @@ public class GetTrial {
     }
 
 
-
-
-
-    class TheEventListener extends EventListener{
+    class EventListener extends okhttp3.EventListener {
 
 
         @Override
@@ -648,7 +616,7 @@ public class GetTrial {
     }
 
 
-    class CallBack implements Callback{
+    class CallBack implements Callback {
 
         @Override
         public void onFailure(@NotNull Call call, @NotNull IOException e) {
@@ -662,6 +630,39 @@ public class GetTrial {
             System.out.println("~~CallBack.onResponse~~");
             System.out.println("call = " + call + ", response = " + response);
 
+        }
+    }
+
+    class Interceptor implements okhttp3.Interceptor {
+        String tag;
+
+        public Interceptor(String tag) {
+            this.tag = tag;
+        }
+
+        @NotNull
+        @Override
+        public Response intercept(@NotNull Chain chain) throws IOException {
+            System.out.println("~~" + tag + ".intercept~~");
+            System.out.println("chain is " + chain);
+
+            Request request = chain.request();
+            System.out.println(tag + "-1|chain.connection is " + chain.connection());
+            System.out.println(tag + "-1|request.url is " + request.url());
+            System.out.println(tag + "-1|request.headers is " + request.headers());
+            System.out.println(tag + "-1|request.body is " + request.body());
+            request = request.newBuilder().url("http://localhost/retry.php").build();
+
+
+            Response response = chain.proceed(request);
+            System.out.println(tag + "-2|chain.connection is " + chain.connection());
+            System.out.println(tag + "-2|request.url is " + request.url());
+            System.out.println(tag + "-2|request.headers is " + request.headers());
+            System.out.println(tag + "-2|request.body is " + request.body());
+            System.out.println(tag + "-2|response.body is " + response.body());
+
+
+            return response;
         }
     }
 }
