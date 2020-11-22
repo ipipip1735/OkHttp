@@ -1,14 +1,22 @@
+import jdk.swing.interop.SwingInterOpUtils;
 import okhttp3.*;
+import okio.ByteString;
+import okio.Timeout;
+import okio.Utf8;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Created by Administrator on 2020/11/9.
@@ -26,19 +34,53 @@ public class GetTrial {
     public static void main(String[] args) {
 
         GetTrial getTrial = new GetTrial();
-//        getTrial.get();
-//        getTrial.getWithAuthorization();
-//        getTrial.getWithRetry();
-//        getTrial.getWithRedirect();
-//        getTrial.getWithTimeout();
-//        getTrial.getWithCookies();
-
-//        getTrial.getConnectionPool();
-//        getTrial.getWithCache();
-//        getTrial.getWithEventListener();
-        getTrial.getWithInterceptors();
+//        System.out.println("OkHttp.VERSION is " + OkHttp.VERSION);
 
 
+//        getTrial.get();//同/异步请求
+//        getTrial.getWithAuthorization();//身份认证
+//        getTrial.getWithRetry();//失败重试
+//        getTrial.getWithRedirect();//重定向
+//        getTrial.getWithTimeout();//超时限制
+//        getTrial.getWithCookies();//Cookie容器
+//        getTrial.getWithCache();//缓存
+//        getTrial.getConnectionPool();//连接池
+//        getTrial.getDispatcher();//线程池
+//        getTrial.getWithEventListener();//生命周期函数
+//        getTrial.getWithInterceptors();//拦截器
+
+
+
+
+    }
+
+    private void getDispatcher() {
+
+        OkHttpClient okHttpClient = new OkHttpClient();
+        okHttpClient.dispatcher().setIdleCallback(new Runnable() {//线程空闲时触发
+            @Override
+            public void run() {
+                System.out.println("~~idleCallback.run~~");
+            }
+        });
+
+        Request request = new Request.Builder().get().url(URL).build();
+        Call call = okHttpClient.newCall(request);
+
+
+        //使用同步请求
+//        try (Response response = call.execute()) {
+//            System.out.println(response.body().string());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        //使用异步请求
+//        call.enqueue(new CallBack());
+
+
+
+        okHttpClient.dispatcher().executorService().shutdown();//关闭线程池
     }
 
     private void getWithRedirect() {
@@ -88,18 +130,25 @@ public class GetTrial {
 
     private void getWithTimeout() {
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .connectTimeout(1000L, TimeUnit.MICROSECONDS)
-                .readTimeout(1000L, TimeUnit.MICROSECONDS)
-                .writeTimeout(1000L, TimeUnit.MICROSECONDS)
-                .callTimeout(1000L, TimeUnit.MICROSECONDS)
+//                .connectTimeout(1L, TimeUnit.SECONDS)
+//                .readTimeout(1L, TimeUnit.SECONDS)
+//                .writeTimeout(L, TimeUnit.SECONDS)
+                .callTimeout(1L, TimeUnit.SECONDS)
                 .build();
+
+
+        System.out.println("callTimeoutMillis is " + okHttpClient.callTimeoutMillis());
 
         Request request = new Request.Builder()
                 .get()
                 .url(URL)
                 .build();
 
-        try (Response response = okHttpClient.newCall(request).execute()) {
+        Call call = okHttpClient.newCall(request);
+        System.out.println("timeoutNanos is " + call.timeout().timeoutNanos());
+
+
+        try (Response response = call.execute()) {
             System.out.println(response.body().string());
         } catch (IOException e) {
             e.printStackTrace();
@@ -138,6 +187,8 @@ public class GetTrial {
     private void getWithAuthorization() {
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
+//                .authenticator(Authenticator.JAVA_NET_AUTHENTICATOR)//使用内置授权提供器，处理407异常
+//                .authenticator(Authenticator.NONE)//使用内置授权提供器，直接返回Null
                 .authenticator(new Authenticator() {
                     @Nullable
                     @Override
@@ -152,11 +203,12 @@ public class GetTrial {
 
                         System.out.println("Challenges: " + response.challenges());
 
-//                        if (responseCount(response) >= 3) {
+//                        if (responseCount(response) >= 3) { //统计重试次数，防止死循环
 //                            return null;
 //                        }
 
                         String credential = Credentials.basic("jesse", "password");
+                        System.out.println("credential = " + credential);
 
                         return response.request().newBuilder()
                                 .header("Authorization", credential)
@@ -169,7 +221,7 @@ public class GetTrial {
 
         Request request = new Request.Builder()
                 .get()
-//                .header("Authorization", "bearer d80ee24d-68c5-484b-b560-ddc4aff389fe")
+//                .header("Authorization", Credentials.basic("jesse", "password"))//不提供授权头字段
                 .url(URL)
                 .build();
 
@@ -218,30 +270,30 @@ public class GetTrial {
 
 
         //处理请求主体
-        OkHttpClient client = new OkHttpClient.Builder()
-//                .post()
-//                .addNetworkInterceptor(new okhttp3.Interceptor() {
-//                    @NotNull
-//                    @Override
-//                    public Response intercept(@NotNull Chain chain) throws IOException {
-//                        System.out.println("~~intercept~~");
-//                        System.out.println(chain);
+//        OkHttpClient client = new OkHttpClient.Builder()
+////                .post()
+////                .addNetworkInterceptor(new okhttp3.Interceptor() {
+////                    @NotNull
+////                    @Override
+////                    public Response intercept(@NotNull Chain chain) throws IOException {
+////                        System.out.println("~~intercept~~");
+////                        System.out.println(chain);
+////
+////
+////
+////
+////                        return null;
+////                    }
+////                })
+//                .build();
 //
+//        Request request = new Request.Builder()
+//                .url("http://www.publicobject.com/helloworld.txt")
+//                .header("User-Agent", "OkHttp Example")
+//                .build();
 //
-//
-//
-//                        return null;
-//                    }
-//                })
-                .build();
-
-        Request request = new Request.Builder()
-                .url("http://www.publicobject.com/helloworld.txt")
-                .header("User-Agent", "OkHttp Example")
-                .build();
-
-        Response response = client.newCall(request).execute();
-        response.body().close();
+//        Response response = client.newCall(request).execute();
+//        response.body().close();
 
 
     }
@@ -368,69 +420,90 @@ public class GetTrial {
     private void get() {
 
         //同步请求
+        OkHttpClient okHttpClient = new OkHttpClient();
+        Request request = new Request.Builder()
+                .get()
+//                .method("GET", null)
+                .header("one", "111")
+                .addHeader("two", "222")
+                .url(URL)
+                .build();
+
+
+        Call call = okHttpClient.newCall(request);
+
+        try (Response response = call.execute()) {
+            System.out.println(response.headers());
+            System.out.println(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        //异步请求
+//        OkHttpClient okHttpClient = new OkHttpClient();
+//        Request request = new Request.Builder().get().url(URL).build();
+//
+//        okHttpClient.newCall(request).enqueue(new Callback() {
+//            @Override
+//            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+//                System.out.println("~~onFailure~~");
+//                System.out.println("call is " + call);
+//                e.printStackTrace();
+//            }
+//
+//            @Override
+//            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+//                System.out.println("~~onResponse~~");
+//                System.out.println("call is " + call);
+//                System.out.println("response is " + response);
+//
+//                System.out.println(response.body().string());
+//            }
+//        });
+
+
+        //打印二进制数据
 //        OkHttpClient okHttpClient = new OkHttpClient();
 //        Request request = new Request.Builder()
 //                .get()
-////                .method("GET", null)
-//                .header("one", "111")
-//                .addHeader("two", "222")
-//                .url(URL)
+//                .url("http://localhost/a.jpg")
 //                .build();
-//
 //
 //        Call call = okHttpClient.newCall(request);
 //
 //        try (Response response = call.execute()) {
-//            System.out.println(response.headers());
-//            System.out.println(response.body().string());
+//            ByteString byteString = response.body().byteString();
+//
+//            System.out.println("size is " + byteString.size());
+//            System.out.println("base64 is " + byteString.base64());
+//            System.out.println("md5 is " + byteString.md5());
+//            System.out.println("hmacSha256 is " + byteString.hmacSha256(byteString));
+//
+////            byteString.write(new FileOutputStream("res/b.jpg"));
+////            byteString.toByteArray();
+////            ByteBuffer byteBuffer = byteString.asByteBuffer();
+////            System.out.println("byteBuffer = " + byteBuffer);
+//
+//
+//
+//            ByteString bs = new ByteString("abcdabcd".getBytes());
+//            System.out.println("startsWith is " + bs.startsWith("bcd".getBytes()));
+//            System.out.println("endsWith is " + bs.endsWith("bcd".getBytes()));
+//            System.out.println("string is " + bs.string(UTF_8));
+//            System.out.println("utf8 is " + bs.utf8());
+//            System.out.println("hex is " + bs.hex());
+//
+//            System.out.println("substring is " + bs.substring(0, bs.size()/2));
+//            System.out.println("getByte is " + bs.getByte(bs.size()/2));
+//            System.out.println("indexOf is " + bs.indexOf("bc".getBytes()));
+//            System.out.println("lastIndexOf is " + bs.lastIndexOf("bc".getBytes()));
+//
+//
+//
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-
-
-        //异步请求
-        OkHttpClient okHttpClient = new OkHttpClient();
-        Request request = new Request.Builder().get().url(URL).build();
-
-
-        okHttpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                System.out.println("~~onFailure~~");
-                System.out.println("call is " + call);
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                System.out.println("~~onResponse~~");
-                System.out.println("call is " + call);
-                System.out.println("response is " + response);
-
-                System.out.println(response.body().string());
-            }
-        });
-
-
-//        okHttpClient.dispatcher().setIdleCallback(new Runnable() {
-//            @Override
-//            public void run() {
-//                System.out.println("~~idleCallback.run~~");
-//            }
-//        });
-//        for (int i = 0; i < 3; i++) {
-//
-//            try {
-//                Thread.sleep(1500L);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//
-//
-//        }
-
-
-//        okHttpClient.dispatcher().executorService().shutdown();
 
     }
 
@@ -629,6 +702,8 @@ public class GetTrial {
         public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
             System.out.println("~~CallBack.onResponse~~");
             System.out.println("call = " + call + ", response = " + response);
+
+            System.out.println(response.body().string());
 
         }
     }
