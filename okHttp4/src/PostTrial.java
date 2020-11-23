@@ -23,8 +23,8 @@ public class PostTrial {
 //        postTrial.postText();
 //        postTrial.postFile();
 //        postTrial.postForm();
-        postTrial.multipart();
-//        postTrial.postWithRequestBody();
+//        postTrial.multipart();
+        postTrial.postWithRequestBody();
 //        postTrial.postWithInterceptor();
 
 
@@ -32,17 +32,12 @@ public class PostTrial {
 
     private void postWithRequestBody() {
 
-
         String url = "http://localhost/post.php";
-
-
 
         Request request = new Request.Builder()
                 .post(new TheRequestBody("go=ddd".getBytes()))
                 .url(url)
                 .build();
-
-
 
 
         OkHttpClient client = new OkHttpClient();
