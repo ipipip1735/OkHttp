@@ -8,6 +8,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="com.squareup.okio:okio:2.9.0" level="application" />
     <orderEntry type="library" name="com.squareup.okhttp3:okhttp:4.9.0" level="application" />
   </component>
 </module>
