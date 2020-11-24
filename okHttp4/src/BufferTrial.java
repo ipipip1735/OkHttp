@@ -16,7 +16,7 @@ public class BufferTrial {
         BufferTrial bufferTrial = new BufferTrial();
 
         //内存读写
-//        bufferTrial.write();
+        bufferTrial.write();
 //        bufferTrial.read();
 
 
@@ -25,11 +25,11 @@ public class BufferTrial {
 
 
         //管道
-        bufferTrial.pipe();
+//        bufferTrial.pipe();
 
 
         //压缩解压
-//        bufferTrial.gzip();
+        bufferTrial.gzip();
 
 
         //计算散列
@@ -145,6 +145,7 @@ public class BufferTrial {
              GzipSink gzipSink = new GzipSink(sink);
              BufferedSink bufferedSink = Okio.buffer(gzipSink)) {
             bufferedSink.writeUtf8("abcd");
+            System.out.println(bufferedSink.getBuffer());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -168,22 +169,23 @@ public class BufferTrial {
         File file = new File("okHttp4/res/abcd");
 
         //输出数据到文件
-//        try(BufferedSink bufferedSink = Okio.buffer(Okio.sink(new File("okHttp4/res/abcd")))) {
-        try (BufferedSink bufferedSink = Okio.buffer(Okio.sink(new File("okHttp4/res/abcd"), true))) {
-            bufferedSink.writeUtf8("aabbccdd");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        //读取文件中的数据
-//        try (BufferedSource source = Okio.buffer(Okio.source(file))) {
-//            while (!source.exhausted()) {
-//                System.out.println(source.readUtf8Line());
-////                System.out.println(source.readUtf8LineStrict(1024L));
-//            }
+////        try(BufferedSink bufferedSink = Okio.buffer(Okio.sink(new File("okHttp4/res/abcd")))) {
+//        try (BufferedSink bufferedSink = Okio.buffer(Okio.sink(new File("okHttp4/res/abcd"), true))) {
+//            bufferedSink.writeUtf8("aabbccdd");
+//            System.out.println(bufferedSink.getBuffer());
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
+
+        //读取文件中的数据
+        try (BufferedSource bufferedSource = Okio.buffer(Okio.source(file))) {
+            while (!bufferedSource.exhausted()) {
+                System.out.println(bufferedSource.readUtf8Line());
+//                System.out.println(source.readUtf8LineStrict(1024L));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
 
         //复制文件
