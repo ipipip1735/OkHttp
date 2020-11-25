@@ -1,12 +1,10 @@
 import okhttp3.*;
 import okio.BufferedSink;
-import okio.Segment;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * Created by Administrator on 2020/11/11 18:54.
@@ -24,8 +22,8 @@ public class PostTrial {
 //        postTrial.postFile();
 //        postTrial.postForm();
 //        postTrial.multipart();
-        postTrial.postWithRequestBody();
-//        postTrial.postWithInterceptor();
+//        postTrial.postWithRequestBody();
+        postTrial.postWithInterceptor();
 
 
     }
@@ -42,7 +40,6 @@ public class PostTrial {
 
         OkHttpClient client = new OkHttpClient();
         try {
-
             System.out.println(client.newCall(request).execute().body().string());
 
         } catch (IOException e) {
@@ -70,20 +67,37 @@ public class PostTrial {
                 .build();
 
 
-//        OkHttpClient client = new OkHttpClient();
-
-
         OkHttpClient client = new OkHttpClient.Builder()
-//                .addNetworkInterceptor(new Interceptor("network"))
-//                .addInterceptor(new Interceptor("app"))
+                .addInterceptor(new Interceptor() {
+                    @NotNull
+                    @Override
+                    public Response intercept(@NotNull Chain chain) throws IOException {
+                        Request req = chain.request();
+
+                        req.newBuilder()
+                                .post(new RequestBody() {
+                                    @Nullable
+                                    @Override
+                                    public MediaType contentType() {
+                                        return null;
+                                    }
+
+                                    @Override
+                                    public void writeTo(@NotNull BufferedSink bufferedSink) throws IOException {
+
+                                    }
+                                })
+                                .build();
+
+                        return null;
+                    }
+                })
                 .build();
 
 
 
         try {
-
             System.out.println(client.newCall(request).execute().body().string());
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -279,10 +293,10 @@ public class PostTrial {
         @Override
         public void writeTo(@NotNull BufferedSink bufferedSink) throws IOException {
             System.out.println("~~RequestBody.writeTo~~");
-
             System.out.println("bufferedSink = " + bufferedSink);
 
             bufferedSink.write(data);
+            bufferedSink.close();
 
         }
     }
