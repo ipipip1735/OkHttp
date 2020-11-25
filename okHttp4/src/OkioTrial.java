@@ -1,40 +1,172 @@
 import okio.*;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
  * Created by Administrator on 2020/11/24 11:26.
  */
-public class BufferTrial {
+public class OkioTrial {
 
     public static void main(String[] args) {
 
-        BufferTrial bufferTrial = new BufferTrial();
+        OkioTrial okioTrial = new OkioTrial();
 
-        //内存读写
-        bufferTrial.write();
-//        bufferTrial.read();
+        //Buffer读写
+//        okioTrial.write();
+//        okioTrial.read();
+
+
+        //数据流
+//        okioTrial.bufferedSource();//Source读操作
+//        okioTrial.BufferedSourceAPI();
+//        okioTrial.bufferedSink();//Source写操作
 
 
         //读写文件
-//        bufferTrial.file();
+//        okioTrial.file();
 
 
         //管道
-//        bufferTrial.pipe();
+//        okioTrial.pipe();
 
 
         //压缩解压
-        bufferTrial.gzip();
+//        okioTrial.gzip();
 
 
         //计算散列
-//        bufferTrial.hashing();
+//        okioTrial.hashing();
 
+    }
+
+    private void BufferedSourceAPI() {
+
+        Buffer buffer = new Buffer();
+        buffer.write("abcd".getBytes());
+        System.out.println(buffer);
+
+        BufferedSource bufferedSource = Okio.buffer((Source) buffer);
+
+        try {
+
+            //掉过字节
+//            bufferedSource.skip(1);//跳过1个字节
+//            System.out.println(bufferedSource.readUtf8());
+
+
+            //获取上游副本
+//            BufferedSource bufferedSource1 = bufferedSource.peek();//获取上游副本
+//            System.out.println(bufferedSource1.readUtf8());//拉取副本中的数据，源上游不会被改变
+//            System.out.println(bufferedSource1.getBuffer());
+//            System.out.println(bufferedSource.getBuffer());
+
+
+            //查找消费前缀
+//            ByteString byteString1 = new ByteString("a".getBytes());
+//            ByteString byteString2 = new ByteString("ab".getBytes());
+//
+//            Options options = Options.of(byteString1, byteString2);
+//            int i = bufferedSource.select(options);
+//            System.out.println(i);
+//            System.out.println(bufferedSource.getBuffer());
+
+
+            //判断长度
+//            System.out.println(bufferedSource.request(4));
+//            System.out.println(bufferedSource.request(8));
+
+
+            bufferedSource.require(8);
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+
+    private void bufferedSink() {
+
+        //基本使用
+        Buffer buffer = new Buffer();
+        System.out.println(buffer);
+
+
+        BufferedSink bufferedSink = Okio.buffer((Sink) buffer);//下游为buffer
+
+        try {
+            bufferedSink.write("ddd".getBytes());
+            bufferedSink.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(buffer);
+
+
+        //使用多层箱体
+//        Buffer buffer = new Buffer();
+//        HashingSink hashingSink = new HashingSink(buffer, "SHA-1");//下游为Buffer
+//        BufferedSink bufferedSink = Okio.buffer(hashingSink);//下游为HashingSink
+//        GzipSink gzipSink = new GzipSink(bufferedSink);//下游为BufferedSink
+//
+//
+//        Buffer data = new Buffer();
+//        data.write("go".getBytes());
+//        try {
+//            gzipSink.write(data, data.size());
+//            gzipSink.flush();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        System.out.println(hashingSink.hash());
+//        System.out.println(buffer);
+
+
+    }
+
+    private void bufferedSource() {
+
+        //基本使用
+        Buffer buffer = new Buffer();
+        buffer.write("abcd".getBytes());
+        System.out.println(buffer);
+
+        BufferedSource bufferedSource = Okio.buffer((Source) buffer);
+
+        try {
+            byte[] bytes = new byte[5];
+            bufferedSource.read(bytes);
+            System.out.println(buffer);
+
+
+            for (int i = 0; i < bytes.length; i++) {
+                System.out.print(bytes[i] + ", ");
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        //使用多层上游
+//        Buffer buffer = new Buffer();
+//        buffer.write("a".getBytes());
+//
+//        HashingSource hashingSource = HashingSource.sha1(buffer);
+//        BufferedSource bufferedSource = Okio.buffer(hashingSource);
+//
+//        try {
+//            System.out.println(bufferedSource.readUtf8());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        System.out.println(hashingSource.hash());
     }
 
 
@@ -100,17 +232,17 @@ public class BufferTrial {
 
 
         //计算写出数据hash值
-        HashingSink hashingSink = HashingSink.sha256(Okio.blackhole());
-        BufferedSink bufferedSink = Okio.buffer(hashingSink);
-
-        try {
-            bufferedSink.writeUtf8("a").flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        ByteString hash = hashingSink.hash();
-        System.out.println("sha256 is " + hash);
+//        HashingSink hashingSink = HashingSink.sha256(Okio.blackhole());
+//        BufferedSink bufferedSink = Okio.buffer(hashingSink);
+//
+//        try {
+//            bufferedSink.writeUtf8("a").flush();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        ByteString hash = hashingSink.hash();
+//        System.out.println("sha256 is " + hash);
 
 
         //计算读取数据hash值
@@ -132,8 +264,6 @@ public class BufferTrial {
 //        System.out.println(byteString.sha1());
 //
 //        System.out.println(hash.equals(byteString.sha1()));
-
-
     }
 
     private void gzip() {
