@@ -1,10 +1,13 @@
 import okhttp3.*;
 import okio.BufferedSink;
+import okio.GzipSink;
+import okio.Okio;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created by Administrator on 2020/11/11 18:54.
@@ -24,7 +27,6 @@ public class PostTrial {
 //        postTrial.multipart();
 //        postTrial.postWithRequestBody();
         postTrial.postWithInterceptor();
-
 
     }
 
@@ -79,19 +81,29 @@ public class PostTrial {
                                     @Nullable
                                     @Override
                                     public MediaType contentType() {
-                                        return null;
+                                        return req.body().contentType();
                                     }
 
                                     @Override
                                     public void writeTo(@NotNull BufferedSink bufferedSink) throws IOException {
-
+                                        GzipSink gzipSink = new GzipSink(bufferedSink);
+                                        BufferedSink bufferGzipSink = Okio.buffer(gzipSink);
+                                        req.body().writeTo(bufferGzipSink);
                                     }
                                 })
                                 .build();
 
-                        return null;
+                        return chain.proceed(req);
                     }
                 })
+//                .addNetworkInterceptor(new Interceptor() {
+//                    @NotNull
+//                    @Override
+//                    public Response intercept(@NotNull Chain chain) throws IOException {
+//                        System.out.println(chain.request().headers());
+//                        return chain.proceed(chain.request());
+//                    }
+//                })
                 .build();
 
 

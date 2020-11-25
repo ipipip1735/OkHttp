@@ -1,6 +1,7 @@
 import okio.*;
 
 import java.io.*;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -17,8 +18,11 @@ public class OkioTrial {
 //        okioTrial.write();
 //        okioTrial.read();
 
+        //数据源
+        okioTrial.sink();
+        okioTrial.souce();
 
-        //数据流
+        //拉取和下沉
 //        okioTrial.bufferedSource();//Source读操作
 //        okioTrial.BufferedSourceAPI();
 //        okioTrial.bufferedSink();//Source写操作
@@ -38,6 +42,50 @@ public class OkioTrial {
 
         //计算散列
 //        okioTrial.hashing();
+
+    }
+
+    private void souce() {
+
+        try {
+            File file = new File("okHttp4/res/abcd");
+            Source fileSource = Okio.source(file);
+
+            Socket socket = new Socket("http://localhost/get.php", 80);
+            Source socketSource = Okio.source(socket);
+
+            InputStream iputStream = new FileInputStream(file);
+            Source iputStreamSource = Okio.source(iputStream);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+    }
+
+    private void sink() {
+
+
+        try {
+            File file = new File("okHttp4/res/abcd");
+            Sink fileSink = Okio.sink(file);
+            System.out.println(fileSink);
+
+            Socket socket = new Socket("http://localhost/put.php", 80);
+            Sink socketSink = Okio.sink(socket);
+
+            OutputStream outputStream = new FileOutputStream(file);
+            Sink outputStreamSink = Okio.sink(outputStream);
+
+            Sink sink = Okio.blackhole();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
     }
 
