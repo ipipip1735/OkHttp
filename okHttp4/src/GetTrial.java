@@ -15,6 +15,7 @@ import java.net.Proxy;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -23,10 +24,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class GetTrial {
 
-    //    static private String URL = "http://localhost/cookie.php";
+    static private String URL = "http://localhost/cookie.php";
 //    static private String URL = "http://localhost/cache.php";
 //    static private String URL = "http://localhost/authorization.php";
-    static private String URL = "http://localhost/get.php";
+//    static private String URL = "http://localhost/get.php";
 //    static private String URL = "http://localhost/redirect.php";
 //    static private String URL = "http://localhost/retry.php";
 //    static private String URL = "https://docs.oracle.com/javase/8/docs/technotes/guides/language/generics.html";
@@ -42,14 +43,12 @@ public class GetTrial {
 //        getTrial.getWithRetry();//失败重试
 //        getTrial.getWithRedirect();//重定向
 //        getTrial.getWithTimeout();//超时限制
-//        getTrial.getWithCookies();//Cookie容器
+        getTrial.getWithCookies();//Cookie容器
 //        getTrial.getWithCache();//缓存
 //        getTrial.getConnectionPool();//连接池
 //        getTrial.getDispatcher();//线程池
 //        getTrial.getWithEventListener();//生命周期函数
 //        getTrial.getWithInterceptors();//拦截器
-
-
 
 
     }
@@ -77,7 +76,6 @@ public class GetTrial {
 
         //使用异步请求
 //        call.enqueue(new CallBack());
-
 
 
         okHttpClient.dispatcher().executorService().shutdown();//关闭线程池
@@ -370,7 +368,6 @@ public class GetTrial {
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .cookieJar(new CookieJar() {
                     HashMap<HttpUrl, List<Cookie>> cookieStore = new HashMap<>();
-                    List<Cookie> list = new ArrayList<Cookie>();
 
                     @Override
                     public void saveFromResponse(@NotNull HttpUrl httpUrl, @NotNull List<Cookie> list) {
@@ -389,6 +386,21 @@ public class GetTrial {
                         System.out.println("httpUrl is " + httpUrl);
 
                         List<Cookie> cookies = cookieStore.get(httpUrl);
+
+                        if (cookies != null) {
+                            System.out.println(cookies);
+                            cookies = cookies.stream().filter(cookie -> {
+
+                                System.out.println("matches is " + cookie.matches(httpUrl));
+                                System.out.println("hostOnly is " + cookie.hostOnly());
+                                System.out.println("expiresAt is " + cookie.expiresAt() + "|" + System.currentTimeMillis());
+                                System.out.println("persistent is " + cookie.persistent());
+
+                                return true;
+                            }).collect(Collectors.toList());
+                        }
+
+
                         return cookies != null ? cookies : new ArrayList<Cookie>();
                     }
                 })
@@ -406,6 +418,11 @@ public class GetTrial {
             e.printStackTrace();
         }
 
+        try {
+            Thread.sleep(6000L);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         try (Response response = okHttpClient.newCall(request).execute()) {
             System.out.println("~~second~~");
