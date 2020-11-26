@@ -26,7 +26,62 @@ public class PostTrial {
 //        postTrial.postForm();
 //        postTrial.multipart();
 //        postTrial.postWithRequestBody();
-        postTrial.postWithInterceptor();
+//        postTrial.postWithInterceptor();
+        postTrial.postProgress();
+
+    }
+
+    private void postProgress() {
+
+        String url = "http://localhost/post.php";
+
+        MediaType contentType = MediaType.parse("image/png");
+        File file = new File("okHttp4/res/a.jpg");
+        RequestBody fileBody = RequestBody.create(file, contentType);
+
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("xxxx", "ooo")
+                .addFormDataPart("AA", "BB.jpg", fileBody)
+                .build();
+
+        Request request = new Request.Builder()
+                .post(requestBody)
+                .url(url)
+                .build();
+
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .addInterceptor(new Interceptor() {
+                    @NotNull
+                    @Override
+                    public Response intercept(@NotNull Chain chain) throws IOException {
+                        System.out.println("~~Interceptor.intercept~~");
+                        Request req = chain.request();
+
+                        System.out.println("contentLength is " + req.body().contentLength());
+
+                        return chain.proceed(req);
+                    }
+                })
+                .addNetworkInterceptor(new Interceptor() {
+                    @NotNull
+                    @Override
+                    public Response intercept(@NotNull Chain chain) throws IOException {
+                        System.out.println("~~NetworkInterceptor.intercept~~");
+                        Request req = chain.request();
+                        System.out.println("contentLength is " + req.body().contentLength());
+                        return chain.proceed(req);
+                    }
+                })
+                .build();
+
+        try {
+            System.out.println(client.newCall(request).execute().body().string());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -77,6 +132,7 @@ public class PostTrial {
                         Request req = chain.request();
 
                         req.newBuilder()
+                                .header("Content-Encoding", "gzip")
                                 .post(new RequestBody() {
                                     @Nullable
                                     @Override

@@ -1,8 +1,11 @@
 import okio.*;
+import org.jetbrains.annotations.NotNull;
+import org.w3c.dom.ls.LSOutput;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.Arrays;
 
 /**
@@ -19,8 +22,8 @@ public class OkioTrial {
 //        okioTrial.read();
 
         //数据源
-        okioTrial.sink();
-        okioTrial.souce();
+//        okioTrial.sink();
+//        okioTrial.souce();
 
         //拉取和下沉
 //        okioTrial.bufferedSource();//Source读操作
@@ -36,6 +39,10 @@ public class OkioTrial {
 //        okioTrial.pipe();
 
 
+        //转发
+//        okioTrial.forwardingSink();
+        okioTrial.forwardingSource();
+
         //压缩解压
 //        okioTrial.gzip();
 
@@ -43,6 +50,67 @@ public class OkioTrial {
         //计算散列
 //        okioTrial.hashing();
 
+    }
+
+    private void forwardingSource() {
+
+        File file = new File("okHttp4/res/a.jpg");
+        try {
+            Source source = Okio.source(file);
+            ForwardingSource forwardingSource = new ForwardingSource(source) {
+                @Override
+                public long read(@NotNull Buffer sink, long byteCount) throws IOException {
+                    System.out.println("~~OkioTrial.read~~");
+                    System.out.println("sink = " + sink + ", byteCount = " + byteCount);
+                    return super.read(sink, byteCount);
+                }
+            };
+            BufferedSource bufferedSource = Okio.buffer(forwardingSource);
+
+            while (!bufferedSource.exhausted())
+                bufferedSource.readByte();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private void forwardingSink() {
+
+        File file = new File("okHttp4/res/a.jpg");
+
+        //显示输出进度
+        ForwardingSink forwardingSink = new ForwardingSink(Okio.blackhole()) {
+
+            long byteCount = 0;
+
+            @Override
+            public void write(@NotNull Buffer source, long byteCount) throws IOException {
+                System.out.println("~~ForwardingSink.write~~");
+                System.out.println("source = " + source + ", byteCount = " + byteCount);
+                super.write(source, byteCount);
+
+
+                double persent = ((double) (this.byteCount += byteCount) / Files.size(file.toPath())) * 100;
+                System.out.println("[" + Math.round(persent) + "%]" + this.byteCount + "/" + Files.size(file.toPath()));
+
+            }
+        };
+
+        BufferedSink bufferedSink = Okio.buffer(forwardingSink);
+        try {
+            BufferedSource bufferedSource = Okio.buffer(Okio.source(file));
+            while (!bufferedSource.exhausted()) {
+                bufferedSink.writeAll(bufferedSource);
+            }
+
+            bufferedSink.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void souce() {
@@ -60,7 +128,6 @@ public class OkioTrial {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
 
 
     }
@@ -268,15 +335,16 @@ public class OkioTrial {
 
     private void hashing() {
 
-//        File file = new File("okHttp4/res/gzip");
-//
-//        try (HashingSink hashingSink = HashingSink.sha256(Okio.blackhole());
-//             BufferedSource source = Okio.buffer(Okio.source(file))) {
-//            source.readAll(hashingSink);
-//            System.out.println("sha256: " + hashingSink.hash().hex());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        //计算输入数据hash值
+        File file = new File("okHttp4/res/abcd");
+
+        try (HashingSink hashingSink = HashingSink.sha256(Okio.blackhole());
+             BufferedSource source = Okio.buffer(Okio.source(file))) {
+            source.readAll(hashingSink);
+            System.out.println("sha256: " + hashingSink.hash().hex());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
 
         //计算写出数据hash值
@@ -344,9 +412,8 @@ public class OkioTrial {
 
     private void file() {
 
-        File file = new File("okHttp4/res/abcd");
-
         //输出数据到文件
+//        File file = new File("okHttp4/res/abcd");
 ////        try(BufferedSink bufferedSink = Okio.buffer(Okio.sink(new File("okHttp4/res/abcd")))) {
 //        try (BufferedSink bufferedSink = Okio.buffer(Okio.sink(new File("okHttp4/res/abcd"), true))) {
 //            bufferedSink.writeUtf8("aabbccdd");
@@ -356,10 +423,20 @@ public class OkioTrial {
 //        }
 
         //读取文件中的数据
+//        try (BufferedSource bufferedSource = Okio.buffer(Okio.source(file))) {
+//            while (!bufferedSource.exhausted()) {
+//                System.out.println(bufferedSource.readUtf8Line());
+////                System.out.println(source.readUtf8LineStrict(1024L));
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        //读取二进制数据
+        File file = new File("okHttp4/res/a.jpg");
         try (BufferedSource bufferedSource = Okio.buffer(Okio.source(file))) {
             while (!bufferedSource.exhausted()) {
-                System.out.println(bufferedSource.readUtf8Line());
-//                System.out.println(source.readUtf8LineStrict(1024L));
+                System.out.println(bufferedSource.readByte() + " - " + bufferedSource.getBuffer().size());//Buffer默认尺寸8K，满了就会从上游拉取一批数据
             }
         } catch (IOException e) {
             e.printStackTrace();
