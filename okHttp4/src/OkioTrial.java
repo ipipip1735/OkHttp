@@ -40,8 +40,8 @@ public class OkioTrial {
 
 
         //转发
-//        okioTrial.forwardingSink();
-        okioTrial.forwardingSource();
+        okioTrial.forwardingSink();
+//        okioTrial.forwardingSource();
 
         //压缩解压
 //        okioTrial.gzip();

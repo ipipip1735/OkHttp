@@ -1,12 +1,12 @@
 import okhttp3.*;
-import okio.BufferedSink;
-import okio.GzipSink;
-import okio.Okio;
+import okio.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.Socket;
+import java.nio.file.Files;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -26,12 +26,12 @@ public class PostTrial {
 //        postTrial.postForm();
 //        postTrial.multipart();
 //        postTrial.postWithRequestBody();
-//        postTrial.postWithInterceptor();
-        postTrial.postProgress();
+//        postTrial.postWithInterceptor();//使用拦截器增加gzip压缩功能
+        postTrial.postWithProgress();//使用拦截器统计上传进度
 
     }
 
-    private void postProgress() {
+    private void postWithProgress() {
 
         String url = "http://localhost/post.php";
 
@@ -41,7 +41,7 @@ public class PostTrial {
 
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("xxxx", "ooo")
+                .addFormDataPart("xxx", "yyy")
                 .addFormDataPart("AA", "BB.jpg", fileBody)
                 .build();
 
@@ -57,20 +57,43 @@ public class PostTrial {
                     @Override
                     public Response intercept(@NotNull Chain chain) throws IOException {
                         System.out.println("~~Interceptor.intercept~~");
-                        Request req = chain.request();
 
-                        System.out.println("contentLength is " + req.body().contentLength());
+                        System.out.println("contentLength is " + chain.request().body().contentLength());
 
-                        return chain.proceed(req);
-                    }
-                })
-                .addNetworkInterceptor(new Interceptor() {
-                    @NotNull
-                    @Override
-                    public Response intercept(@NotNull Chain chain) throws IOException {
-                        System.out.println("~~NetworkInterceptor.intercept~~");
-                        Request req = chain.request();
-                        System.out.println("contentLength is " + req.body().contentLength());
+                        Request req = chain.request().newBuilder()
+                                .post(new RequestBody() {
+
+                                    @Nullable
+                                    @Override
+                                    public MediaType contentType() {
+                                        return chain.request().body().contentType();
+                                    }
+
+                                    @Override
+                                    public void writeTo(@NotNull BufferedSink bufferedSink) throws IOException {
+                                        System.out.println("~~RequestBody.writeTo~~");
+                                        System.out.println("bufferedSink = " + bufferedSink);
+
+                                        ForwardingSink forwardingSink = new ForwardingSink(bufferedSink) {
+                                            long byteCount = 0;
+
+                                            @Override
+                                            public void write(@NotNull Buffer source, long byteCount) throws IOException {
+                                                System.out.println("~~ForwardingSink.write~~");
+                                                System.out.println("source = " + source + ", byteCount = " + byteCount);
+                                                super.write(source, byteCount);
+
+                                                double persent = ((double) (this.byteCount += byteCount) / chain.request().body().contentLength()) * 100;
+                                                System.out.println("[" + Math.round(persent) + "%]" + this.byteCount + "/" + Files.size(file.toPath()));
+                                            }
+                                        };
+                                        BufferedSink forwardingBufferedSink = Okio.buffer(forwardingSink);
+                                        chain.request().body().writeTo(forwardingBufferedSink);
+                                        forwardingBufferedSink.close();
+                                    }
+                                })
+                                .build();
+
                         return chain.proceed(req);
                     }
                 })
@@ -78,7 +101,6 @@ public class PostTrial {
 
         try {
             System.out.println(client.newCall(request).execute().body().string());
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -152,16 +174,7 @@ public class PostTrial {
                         return chain.proceed(req);
                     }
                 })
-//                .addNetworkInterceptor(new Interceptor() {
-//                    @NotNull
-//                    @Override
-//                    public Response intercept(@NotNull Chain chain) throws IOException {
-//                        System.out.println(chain.request().headers());
-//                        return chain.proceed(chain.request());
-//                    }
-//                })
                 .build();
-
 
 
         try {
@@ -280,63 +293,6 @@ public class PostTrial {
         }
 
     }
-
-
-//    class Interceptor implements okhttp3.Interceptor {
-//        String tag;
-//
-//        public Interceptor(String tag) {
-//            this.tag = tag;
-//        }
-//
-//        @NotNull
-//        @Override
-//        public Response intercept(@NotNull Chain chain) throws IOException {
-//            System.out.println("~~" + tag + ".intercept~~");
-//            System.out.println("chain is " + chain);
-//
-//            Request request = chain.request();
-//            RequestBody requestBody = request.body();
-//            System.out.println("contentLength is " + requestBody.contentLength());
-//            System.out.println("contentType is " + requestBody.contentType());
-//
-//            if (request.body() == null || request.header("Content-Encoding") != null) {
-//                return chain.proceed(request);
-//            }
-//
-//            MediaType mediaType = request.body().contentType();
-//
-//            request = request.newBuilder()
-//                    .header("Content-Encoding", "gzip")
-//                    .post(new RequestBody() {
-//                        @Nullable
-//                        @Override
-//                        public MediaType contentType() {
-//                            System.out.println("~~Interceptor.contentType~~");
-//                            return mediaType;
-//                        }
-//
-//                        @Override
-//                        public void writeTo(@NotNull BufferedSink bufferedSink) throws IOException {
-//                            System.out.println("~~Interceptor.writeTo~~");
-//
-//
-//                        }
-//                    })
-//                    .build();
-//
-//
-//
-//
-//
-//
-//            Response response = chain.proceed(request);
-//
-//
-//            return response;
-//        }
-//    }
-
 
     class TheRequestBody extends RequestBody {
         byte[] data;
