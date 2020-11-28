@@ -40,11 +40,11 @@ public class OkioTrial {
 
 
         //转发
-        okioTrial.forwardingSink();
+//        okioTrial.forwardingSink();
 //        okioTrial.forwardingSource();
 
         //压缩解压
-//        okioTrial.gzip();
+        okioTrial.gzip();
 
 
         //计算散列
@@ -384,25 +384,43 @@ public class OkioTrial {
 
     private void gzip() {
 
-        File file = new File("okHttp4/res/gzip");
 
-        //gzip压缩
-        try (Sink sink = Okio.sink(file);
-             GzipSink gzipSink = new GzipSink(sink);
-             BufferedSink bufferedSink = Okio.buffer(gzipSink)) {
-            bufferedSink.writeUtf8("abcd");
-            System.out.println(bufferedSink.getBuffer());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        //例一：基本使用
+//        File file = new File("okHttp4/res/gzip");
+
+        //使用gzip压缩后写入到文件
+//        try (Sink sink = Okio.sink(file);
+//             GzipSink gzipSink = new GzipSink(sink);
+//             BufferedSink bufferedSink = Okio.buffer(gzipSink)) {
+//            bufferedSink.writeUtf8("abcd");
+//            System.out.println(bufferedSink.getBuffer());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        //使用gzip解压，再读取
+//        try (Source source = Okio.source(file);
+//             GzipSource gzipSource = new GzipSource(source);
+//             BufferedSource bufferedSource = Okio.buffer(gzipSource)) {
+//            while (!bufferedSource.exhausted())
+//                System.out.println(bufferedSource.readUtf8());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
 
-        //gzip解压
-        try (Source source = Okio.source(file);
-             GzipSource gzipSource = new GzipSource(source);
-             BufferedSource bufferedSource = Okio.buffer(gzipSource)) {
-            while (!bufferedSource.exhausted())
-                System.out.println(bufferedSource.readUtf8());
+
+        //例二：基本使用读取源文件，使用gizp压缩后保存
+//        File src = new File("okHttp4/res/b.jpg");
+//        File des = new File("okHttp4/res/b.jpg.gzip");
+        File src = new File("okHttp4/res/a.txt");
+        File des = new File("okHttp4/res/a.txt.gzip");
+
+        try (BufferedSource bufferedSource = Okio.buffer(Okio.source(src));
+             BufferedSink bufferedGzipSink = Okio.buffer(new GzipSink(Okio.sink(des)))) {
+
+            bufferedSource.readAll(bufferedGzipSink);
+
         } catch (IOException e) {
             e.printStackTrace();
         }

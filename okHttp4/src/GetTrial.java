@@ -1,33 +1,30 @@
-import jdk.swing.interop.SwingInterOpUtils;
 import okhttp3.*;
-import okio.ByteString;
-import okio.Timeout;
-import okio.Utf8;
+import okhttp3.logging.HttpLoggingInterceptor;
+import okhttp3.logging.LoggingEventListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Created by Administrator on 2020/11/9.
  */
 public class GetTrial {
 
-    static private String URL = "http://localhost/cookie.php";
+//    static private String URL = "http://localhost/cookie.php";
 //    static private String URL = "http://localhost/cache.php";
 //    static private String URL = "http://localhost/authorization.php";
-//    static private String URL = "http://localhost/get.php";
+    static private String URL = "http://localhost/get.php";
+//    static private String URL = "http://localhost/post.php";
 //    static private String URL = "http://localhost/redirect.php";
 //    static private String URL = "http://localhost/retry.php";
 //    static private String URL = "https://docs.oracle.com/javase/8/docs/technotes/guides/language/generics.html";
@@ -43,13 +40,65 @@ public class GetTrial {
 //        getTrial.getWithRetry();//失败重试
 //        getTrial.getWithRedirect();//重定向
 //        getTrial.getWithTimeout();//超时限制
-        getTrial.getWithCookies();//Cookie容器
+//        getTrial.getWithCookies();//Cookie容器
 //        getTrial.getWithCache();//缓存
 //        getTrial.getConnectionPool();//连接池
 //        getTrial.getDispatcher();//线程池
 //        getTrial.getWithEventListener();//生命周期函数
 //        getTrial.getWithInterceptors();//拦截器
+//        getTrial.logging();//日志
 
+    }
+
+
+    private void logging() {
+
+        //使用日志拦截器
+//        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor()
+////                .setLevel(HttpLoggingInterceptor.Level.BASIC);
+//                .setLevel(HttpLoggingInterceptor.Level.BODY);
+////                .setLevel(HttpLoggingInterceptor.Level.HEADERS);
+////                .setLevel(HttpLoggingInterceptor.Level.NONE);
+//
+//
+//        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+//                .addInterceptor(httpLoggingInterceptor)
+//                .build();
+//
+//        Request request = new Request.Builder()
+//                .get()
+//                .post(new FormBody.Builder().add("xxx", "yyy").build())
+//                .header("one", "111")
+//                .url(URL)
+//                .build();
+//
+//
+//        Call call = okHttpClient.newCall(request);
+//
+//        try (Response response = call.execute()) {
+//            System.out.println(response.headers());
+//            System.out.println(response.body().string());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+
+
+        //使用日志监听器
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .eventListenerFactory(new LoggingEventListener.Factory(HttpLoggingInterceptor.Logger.DEFAULT))
+                .build();
+
+        Request request = new Request.Builder()
+                .get()
+                .url(URL)
+                .build();
+
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            System.out.println(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -299,30 +348,9 @@ public class GetTrial {
     private void getWithEventListener() {
 
         //方式一：使用EventListener
-        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-//                .eventListener(EventListener.NONE)//使用空监听器
-                .eventListener(new EventListener())
-                .build();
-        Request request = new Request.Builder()
-                .get()
-                .url(URL)
-                .build();
-        try (Response response = okHttpClient.newCall(request).execute()) {
-            System.out.println(response.body().string());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-        //方式二：使用监听器工厂
 //        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-//                .eventListenerFactory(new EventListener.Factory() {
-//                    @NotNull
-//                    @Override
-//                    public EventListener create(@NotNull Call call) {
-//                        return new TheEventListener();
-//                    }
-//                })
+////                .eventListener(EventListener.NONE)//使用空监听器
+//                .eventListener(new EventListener())
 //                .build();
 //        Request request = new Request.Builder()
 //                .get()
@@ -333,6 +361,27 @@ public class GetTrial {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
+
+
+        //方式二：使用监听器工厂
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .eventListenerFactory(new EventListener.Factory() {
+                    @NotNull
+                    @Override
+                    public EventListener create(@NotNull Call call) {
+                        return new EventListener();
+                    }
+                })
+                .build();
+        Request request = new Request.Builder()
+                .get()
+                .url(URL)
+                .build();
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            System.out.println(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
