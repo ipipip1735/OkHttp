@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Created by Administrator on 2020/11/24 11:26.
@@ -20,6 +21,7 @@ public class OkioTrial {
         //Buffer读写
 //        okioTrial.write();
 //        okioTrial.read();
+        okioTrial.BufferedAPI();
 
         //数据源
 //        okioTrial.sink();
@@ -27,7 +29,6 @@ public class OkioTrial {
 
         //拉取和下沉
 //        okioTrial.bufferedSource();//Source读操作
-//        okioTrial.BufferedSourceAPI();
 //        okioTrial.bufferedSink();//Source写操作
 
 
@@ -44,11 +45,104 @@ public class OkioTrial {
 //        okioTrial.forwardingSource();
 
         //压缩解压
-        okioTrial.gzip();
+//        okioTrial.gzip();
 
 
         //计算散列
 //        okioTrial.hashing();
+
+
+        //读写片段
+//        okioTrial.segment();
+
+
+    }
+
+    private void segment() {
+        //初始化
+//        Segment segment = new Segment();
+//
+//        System.out.println("segment.data = " + segment.data.length);
+//        System.out.println("segment.limit = " + segment.limit);
+//        System.out.println("segment.pos = " + segment.pos);
+//
+//        segment.data[segment.limit++] = 1;//首索引写入数据
+//        segment.data[segment.data.length -1] = 1;//尾索引写入数据
+
+
+        //部分复制
+//        Segment segment = new Segment();
+//        System.out.println(segment.limit);
+//
+//        Segment temp = new Segment(new byte[]{1, 2, 4, 8}, 1, 4, false, true);
+//        temp.writeTo(segment, 2);//部分复制
+//        System.out.println("pos = " + segment.pos + ", " +
+//                "limit = " + segment.limit + ", " +
+//                "owner = " + segment.owner + ", " +
+//                "shared = " + segment.shared + ", " +
+//                "length = " + segment.data.length);
+//        System.out.println("pos = " + temp.pos + ", " +
+//                "limit = " + temp.limit + ", " +
+//                "owner = " + temp.owner + ", " +
+//                "shared = " + temp.shared + ", " +
+//                "length = " + temp.data.length);
+//
+//        for (int i = 0; i < segment.data.length; i++) {
+//            System.out.print(segment.data[i] + "-" + temp.data[i] + ", ");
+//        }
+
+
+        //共享复制
+        Segment segment = new Segment(new byte[]{1, 2, 4, 8}, 0, 4, false, true);
+        Segment temp = segment.sharedCopy();//共享复制
+
+        System.out.println("pos = " + segment.pos + ", " +
+                "limit = " + segment.limit + ", " +
+                "owner = " + segment.owner + ", " +
+                "shared = " + segment.shared + ", " +
+                "length = " + segment.data.length);
+        System.out.println("pos = " + temp.pos + ", " +
+                "limit = " + temp.limit + ", " +
+                "owner = " + temp.owner + ", " +
+                "shared = " + temp.shared + ", " +
+                "length = " + temp.data.length);
+
+        segment.data[1] = 3;//因为共享同一段内存，所以修改是同步的
+        for (int i = 0; i < segment.data.length; i++) {
+            System.out.print(segment.data[i] + "-" + temp.data[i] + ", ");
+        }
+
+        //增加片段
+//        Segment segment = SegmentPool.take();//从片段池获取空片段
+//        segment.prev = segment.next = segment;//初始化指针（单节点所以首尾相连）
+//        System.out.println("pos = " + segment.pos + ", " +
+//                "limit = " + segment.limit + ", " +
+//                "owner = " + segment.owner + ", " +
+//                "shared = " + segment.shared + ", " +
+//                "length = " + segment.data.length);
+//
+//        Segment temp = new Segment(new byte[]{1, 2, 4, 8}, 1, 4, false, true);
+//
+//        segment.push(temp);//追加片段
+//        System.out.println("pos = " + segment.pos + ", " +
+//                "limit = " + segment.limit + ", " +
+//                "owner = " + segment.owner + ", " +
+//                "shared = " + segment.shared + ", " +
+//                "length = " + segment.data.length);
+//
+//
+//        segment.compact();
+//        System.out.println("pos = " + segment.pos + ", " +
+//                "limit = " + segment.limit + ", " +
+//                "owner = " + segment.owner + ", " +
+//                "shared = " + segment.shared + ", " +
+//                "length = " + segment.data.length);
+//        System.out.println("pos = " + temp.pos + ", " +
+//                "limit = " + temp.limit + ", " +
+//                "owner = " + temp.owner + ", " +
+//                "shared = " + temp.shared + ", " +
+//                "length = " + temp.data.length);
+
 
     }
 
@@ -156,49 +250,100 @@ public class OkioTrial {
 
     }
 
-    private void BufferedSourceAPI() {
+    private void BufferedAPI() {
 
         Buffer buffer = new Buffer();
         buffer.write("abcd".getBytes());
         System.out.println(buffer);
 
-        BufferedSource bufferedSource = Okio.buffer((Source) buffer);
+        //清空Buffer
+//        buffer.clear();
+//        System.out.println(buffer);
 
+
+        //获取所有完整片段的总尺寸，那些未满的（不足8K的）片段不会被计算在内
+//        for (int i = 0; i < 1024; i++) {
+//            byte[] bytes = new byte[1024];
+//            Arrays.fill(bytes, (byte) 1);
+//            buffer.write(bytes);
+//            System.out.println(buffer.completeSegmentByteCount() + " / " + buffer.size());
+//        }
+
+
+        //获取索引处的字节（不会消费Buffer）
+//        System.out.println(buffer.getByte(0L));
+//        System.out.println(buffer);
+
+
+        //复制
         try {
-
-            //掉过字节
-//            bufferedSource.skip(1);//跳过1个字节
-//            System.out.println(bufferedSource.readUtf8());
-
-
-            //获取上游副本
-//            BufferedSource bufferedSource1 = bufferedSource.peek();//获取上游副本
-//            System.out.println(bufferedSource1.readUtf8());//拉取副本中的数据，源上游不会被改变
-//            System.out.println(bufferedSource1.getBuffer());
-//            System.out.println(bufferedSource.getBuffer());
+            //完全复制
+//            Buffer newBuffer = buffer.copy();
+//            newBuffer.readByte();
+//            System.out.println("buffer is " + buffer);
+//            System.out.println("newBuffer is " + newBuffer);
+//            buffer.write("e".getBytes());
+//            System.out.println("buffer is " + buffer);
+//            System.out.println("newBuffer is " + newBuffer);
 
 
-            //查找消费前缀
-//            ByteString byteString1 = new ByteString("a".getBytes());
-//            ByteString byteString2 = new ByteString("ab".getBytes());
-//
-//            Options options = Options.of(byteString1, byteString2);
-//            int i = bufferedSource.select(options);
-//            System.out.println(i);
-//            System.out.println(bufferedSource.getBuffer());
+            //部分复制
+            Buffer newBuffer = new Buffer();
+            Buffer origin = buffer.copyTo(newBuffer, 1);
+            System.out.println(origin.equals(buffer));
+            System.out.println(origin.equals(newBuffer));
 
+            System.out.println("buffer is " + buffer);
+            System.out.println("newBuffer is " + newBuffer);
 
-            //判断长度
-//            System.out.println(bufferedSource.request(4));
-//            System.out.println(bufferedSource.request(8));
+            newBuffer.readByte();
+            System.out.println("buffer is " + buffer);
+            System.out.println("newBuffer is " + newBuffer);
 
+            newBuffer.write("e".getBytes());
+            System.out.println("buffer is " + buffer);
+            System.out.println("newBuffer is " + newBuffer);
 
-            bufferedSource.require(8);
-
-
-        } catch (IOException e) {
+        } catch (EOFException e) {
             e.printStackTrace();
         }
+
+
+        //查找消费前缀
+//        ByteString byteString1 = new ByteString("a".getBytes());
+//        ByteString byteString2 = new ByteString("ab".getBytes());
+//        Options options = Options.of(byteString1, byteString2);
+//        int i = buffer.select(options);
+//        System.out.println(i);
+//        System.out.println(buffer.getBuffer());
+
+
+        //判断长度
+//            System.out.println(buffer.request(4));
+//            System.out.println(buffer.request(8));
+
+
+//        try {
+//
+//            //掉过字节
+////            buffer.skip(1);//跳过1个字节
+////            System.out.println(buffer.readUtf8());
+//
+//
+//            //获取上游副本
+////            BufferedSource bufferedSource = buffer.peek();//获取上游副本
+////            System.out.println(bufferedSource.readUtf8());//拉取副本中的数据，源上游不会被改变
+////            System.out.println(bufferedSource.getBuffer());
+////            System.out.println(buffer.getBuffer());
+//
+//
+//            //判断长度（不满足则抛异常）
+//            buffer.require(8);
+//
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
 
     }
@@ -407,7 +552,6 @@ public class OkioTrial {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-
 
 
         //例二：基本使用读取源文件，使用gizp压缩后保存
