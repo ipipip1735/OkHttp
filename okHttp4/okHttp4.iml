@@ -8,7 +8,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="com.squareup.okhttp3:okhttp:4.9.0" level="application" />
-    <orderEntry type="library" name="com.squareup.okhttp3:logging-interceptor:4.9.0" level="application" />
+    <orderEntry type="library" name="squareup.okhttp3.okhttp" level="application" />
+    <orderEntry type="library" name="squareup.okhttp3.logging.interceptor" level="application" />
+    <orderEntry type="library" name="squareup.okhttp3.okhttp.urlconnection" level="application" />
   </component>
 </module>

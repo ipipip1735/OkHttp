@@ -1,17 +1,27 @@
 import okhttp3.*;
+import okhttp3.Authenticator;
+
+import okhttp3.EventListener;
+import okhttp3.internal.tls.CertificateChainCleaner;
+import okhttp3.internal.tls.OkHostnameVerifier;
 import okhttp3.logging.HttpLoggingInterceptor;
 import okhttp3.logging.LoggingEventListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.net.ssl.*;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.io.InputStream;
+import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.*;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -20,14 +30,14 @@ import java.util.stream.Collectors;
  */
 public class GetTrial {
 
-//    static private String URL = "http://localhost/cookie.php";
+    //    static private String URL = "http://localhost/cookie.php";
 //    static private String URL = "http://localhost/cache.php";
 //    static private String URL = "http://localhost/authorization.php";
-    static private String URL = "http://localhost/get.php";
+//    static private String URL = "http://localhost/get.php";
 //    static private String URL = "http://localhost/post.php";
 //    static private String URL = "http://localhost/redirect.php";
 //    static private String URL = "http://localhost/retry.php";
-//    static private String URL = "https://docs.oracle.com/javase/8/docs/technotes/guides/language/generics.html";
+    static private String URL = "https://docs.oracle.com/javase/8/docs/technotes/guides/language/generics.html";
 
     public static void main(String[] args) {
 
@@ -48,6 +58,180 @@ public class GetTrial {
 //        getTrial.getWithInterceptors();//拦截器
 //        getTrial.logging();//日志
 
+        //HTTPS连接
+//        getTrial.httpsWithConnectionSpec();//指定TSL版本和加密算法
+        getTrial.httpsWithCertificatePinner();//绑定公钥摘要
+//        getTrial.httpsWithSSLSocket();//自定义SSL连接
+
+    }
+
+    private void httpsWithSSLSocket() {
+        String URL = "https://publicobject.com/robots.txt";
+//        String URL = "https://www.baidu.com";
+
+
+        X509TrustManager[] trustManagers = new X509TrustManager[1];
+        //方式一：自定义受信管理器
+        trustManagers[0] = new X509TrustManager(){
+            @Override
+            public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                System.out.println("~~X509TrustManager.checkClientTrusted~~");
+                System.out.println("x509Certificates = " + Arrays.deepToString(x509Certificates) + ", s = " + s);
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                System.out.println("~~X509TrustManager.checkServerTrusted~~");
+//                System.out.println("x509Certificates = " + Arrays.deepToString(x509Certificates) + ", s = " + s);
+            }
+
+            @Override
+            public X509Certificate[] getAcceptedIssuers() {
+                System.out.println("~~X509TrustManager.getAcceptedIssuers~~");
+
+                try (InputStream inStream = Files.newInputStream(Path.of("okHttp4/res/ca/root.cer"))) {
+                    CertificateFactory cf = CertificateFactory.getInstance("X.509");//创建工厂对象
+                    Certificate certificate = cf.generateCertificate(inStream);//获取证书对象集
+                    System.out.println("certificate = " + certificate);
+                    return new X509Certificate[]{(X509Certificate) certificate};
+                } catch (IOException | CertificateException e) {
+                    e.printStackTrace();
+                }
+                return new X509Certificate[0];
+            }
+        };
+
+        //方式二
+        try (InputStream inStream = Files.newInputStream(Path.of("okHttp4/res/ca/root.cer"))) {
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");//创建工厂对象
+            X509Certificate x509Certificate = (X509Certificate) cf.generateCertificate(inStream);//获取证书对象集
+
+            KeyStore keyStore = KeyStore.getInstance("PKCS12");
+            keyStore.load(null, null);
+            keyStore.setCertificateEntry("root", x509Certificate);
+
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("PKIX");
+            trustManagerFactory.init(keyStore);
+            trustManagers[0] = (X509TrustManager) trustManagerFactory.getTrustManagers()[0];
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CertificateEncodingException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
+
+
+
+        SSLSocketFactory sslSocketFactory;
+        try {
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustManagers, null);
+            sslSocketFactory = sslContext.getSocketFactory();
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException(e);
+        }
+
+
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .sslSocketFactory(sslSocketFactory, trustManagers[0])
+                .eventListener(new TheEventListener())
+                .build();
+
+        Request request = new Request.Builder()
+                .get()
+                .url(URL)
+                .build();
+
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            System.out.println(response.body().string());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void httpsWithCertificatePinner() {
+        String URL = "https://publicobject.com/robots.txt";
+//        String URL = "https://www.baidu.com";
+
+
+        //创建证书绑定器
+        CertificatePinner certificatePinner = new CertificatePinner.Builder()
+                .add("publicobject.com", "sha256/afwiKY3RxoMmLkuRW1l7QsPZTJPwDS2pdDROQjXw8ig=", "sha256/RHF4AjPA0S2CWTzbJ376hUO4YziSi2Tk+iO12TJHj9c=")
+                .build();
+
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .certificatePinner(certificatePinner)
+//                .hostnameVerifier(new HostnameVerifier() {
+//                    @Override
+//                    public boolean verify(String s, SSLSession sslSession) {
+//                        System.out.println("~~GetTrial.verify~~");
+//                        System.out.println("s = " + s + ", sslSession = " + sslSession);
+//
+//                        return HttpsURLConnection.getDefaultHostnameVerifier().verify(s, sslSession);
+//                    }
+//                })
+                .eventListener(new TheEventListener())
+                .build();
+
+        Request request = new Request.Builder()
+                .get()
+                .url(URL)
+                .build();
+
+        try (Response response = okHttpClient.newCall(request).execute()) {
+//            System.out.println(response.body().string());
+
+            //打印证书
+            System.out.println("peerCertificates() = " + response.handshake().peerCertificates());
+//            List l = response.handshake().peerCertificates();
+//            Object o = l.get(0);
+
+            //打印证书和摘要
+//            for (Certificate certificate : response.handshake().peerCertificates()) {
+////                System.out.println("certificate = " + certificate);
+//                System.out.println(CertificatePinner.pin(certificate));//打印证书SHA256摘要
+//            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void httpsWithConnectionSpec() {
+        //创建标准
+        ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)//创建MODERN_TLS，以此为基础进行修改
+                .tlsVersions(TlsVersion.TLS_1_2)
+                .cipherSuites(
+                        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                        CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256)
+                .build();
+
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .connectionSpecs(Collections.singletonList(spec))
+//                .connectionSpecs(Arrays.asList(ConnectionSpec.MODERN_TLS, ConnectionSpec.COMPATIBLE_TLS))
+                .eventListener(new TheEventListener())
+                .build();
+
+        Request request = new Request.Builder()
+                .get()
+                .url(URL)
+                .build();
+
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            System.out.println("response.handshake() = " + response.handshake());
+            System.out.println(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -83,10 +267,9 @@ public class GetTrial {
 //        }
 
 
-
         //使用日志监听器
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .eventListenerFactory(new LoggingEventListener.Factory(HttpLoggingInterceptor.Logger.DEFAULT))
+                .eventListenerFactory((EventListener.Factory) new LoggingEventListener.Factory(HttpLoggingInterceptor.Logger.DEFAULT))
                 .build();
 
         Request request = new Request.Builder()
@@ -133,7 +316,7 @@ public class GetTrial {
     private void getWithRedirect() {
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .eventListener(new EventListener())
+                .eventListener(new TheEventListener())
                 .build();
 
         Request request = new Request.Builder()
@@ -205,7 +388,7 @@ public class GetTrial {
     private void getWithRetry() {
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 //.retryOnConnectionFailure(false)
-                .eventListener(new EventListener())
+                .eventListener(new TheEventListener())
                 .build();
 
         Request request = new Request.Builder()
@@ -262,7 +445,7 @@ public class GetTrial {
                                 .build();
                     }
                 })
-                .eventListener(new EventListener())
+                .eventListener(new TheEventListener())
                 .build();
 
 
@@ -350,7 +533,7 @@ public class GetTrial {
         //方式一：使用EventListener
 //        OkHttpClient okHttpClient = new OkHttpClient.Builder()
 ////                .eventListener(EventListener.NONE)//使用空监听器
-//                .eventListener(new EventListener())
+//                .eventListener(new TheEventListener())
 //                .build();
 //        Request request = new Request.Builder()
 //                .get()
@@ -365,11 +548,11 @@ public class GetTrial {
 
         //方式二：使用监听器工厂
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .eventListenerFactory(new EventListener.Factory() {
+                .eventListenerFactory(new TheEventListener.Factory() {
                     @NotNull
                     @Override
                     public EventListener create(@NotNull Call call) {
-                        return new EventListener();
+                        return new TheEventListener();
                     }
                 })
                 .build();
@@ -388,11 +571,11 @@ public class GetTrial {
     private void getWithCache() {
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .cache(new Cache(new File("okHttp4/res"), 50L * 1024L * 1024L))
+                .cache(new Cache(new File("okHttp4/res"), 50L * 1024L * 1024L))//开启缓存，设置缓存目录
                 .build();
         Request request = new Request.Builder()
                 .get()
-//                .cacheControl(CacheControl.FORCE_CACHE)
+                .cacheControl(CacheControl.FORCE_CACHE)//配置请求时的缓存控制策略
                 .url(URL)
                 .build();
 
@@ -414,45 +597,63 @@ public class GetTrial {
 
     private void getWithCookies() {
 
+        //方式一：自定义CookieJar
+//        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+//                .cookieJar(new CookieJar() {
+//                    HashMap<HttpUrl, List<Cookie>> cookieStore = new HashMap<>();
+//
+//                    @Override
+//                    public void saveFromResponse(@NotNull HttpUrl httpUrl, @NotNull List<Cookie> list) {
+//                        System.out.println("~~saveFromResponse~~");
+//                        System.out.println("httpUrl is " + httpUrl);
+//                        System.out.println("list is " + list);
+//
+//
+//                        cookieStore.put(httpUrl, list);
+//                    }
+//
+//                    @NotNull
+//                    @Override
+//                    public List<Cookie> loadForRequest(@NotNull HttpUrl httpUrl) {
+//                        System.out.println("~~loadForRequest~~");
+//                        System.out.println("httpUrl is " + httpUrl);
+//
+//                        List<Cookie> cookies = cookieStore.get(httpUrl);
+//
+//                        if (cookies != null) {
+//                            System.out.println(cookies);
+//                            cookies = cookies.stream().filter(cookie -> {
+//
+//                                System.out.println("domain is " + cookie.domain());
+//                                System.out.println("hostOnly is " + cookie.httpOnly());
+//                                System.out.println("matches is " + cookie.matches(httpUrl));
+//                                System.out.println("hostOnly is " + cookie.hostOnly());
+//                                System.out.println("expiresAt is " + cookie.expiresAt() + "|" + System.currentTimeMillis());
+//                                System.out.println("persistent is " + cookie.persistent());
+//
+//                                return true;
+//                            }).collect(Collectors.toList());
+//                        }
+//
+//
+//                        return cookies != null ? cookies : new ArrayList<Cookie>();
+//                    }
+//                })
+//                .build();
+
+        //方式二：使用CookieManager
+        CookieManager cookieManager = new CookieManager();
+        cookieManager.setCookiePolicy(new CookiePolicy() {
+            @Override
+            public boolean shouldAccept(URI uri, HttpCookie cookie) {
+                System.out.println("~~GetTrial.shouldAccept~~");
+                System.out.println("uri = " + uri + ", cookie = " + cookie);
+                return true;
+            }
+        });
+        CookieHandler.setDefault(cookieManager);
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .cookieJar(new CookieJar() {
-                    HashMap<HttpUrl, List<Cookie>> cookieStore = new HashMap<>();
-
-                    @Override
-                    public void saveFromResponse(@NotNull HttpUrl httpUrl, @NotNull List<Cookie> list) {
-                        System.out.println("~~saveFromResponse~~");
-                        System.out.println("httpUrl is " + httpUrl);
-                        System.out.println("list is " + list);
-
-
-                        cookieStore.put(httpUrl, list);
-                    }
-
-                    @NotNull
-                    @Override
-                    public List<Cookie> loadForRequest(@NotNull HttpUrl httpUrl) {
-                        System.out.println("~~loadForRequest~~");
-                        System.out.println("httpUrl is " + httpUrl);
-
-                        List<Cookie> cookies = cookieStore.get(httpUrl);
-
-                        if (cookies != null) {
-                            System.out.println(cookies);
-                            cookies = cookies.stream().filter(cookie -> {
-
-                                System.out.println("matches is " + cookie.matches(httpUrl));
-                                System.out.println("hostOnly is " + cookie.hostOnly());
-                                System.out.println("expiresAt is " + cookie.expiresAt() + "|" + System.currentTimeMillis());
-                                System.out.println("persistent is " + cookie.persistent());
-
-                                return true;
-                            }).collect(Collectors.toList());
-                        }
-
-
-                        return cookies != null ? cookies : new ArrayList<Cookie>();
-                    }
-                })
+                .cookieJar(new JavaNetCookieJar(CookieHandler.getDefault()))
                 .build();
 
         Request request = new Request.Builder()
@@ -468,7 +669,7 @@ public class GetTrial {
         }
 
         try {
-            Thread.sleep(6000L);
+            Thread.sleep(3000L);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -570,187 +771,6 @@ public class GetTrial {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-
-    }
-
-
-    class EventListener extends okhttp3.EventListener {
-
-
-        @Override
-        public void cacheConditionalHit(@NotNull Call call, @NotNull Response cachedResponse) {
-            System.out.println("~~EventListener.cacheConditionalHit~~");
-            super.cacheConditionalHit(call, cachedResponse);
-        }
-
-        @Override
-        public void cacheHit(@NotNull Call call, @NotNull Response response) {
-            System.out.println("~~EventListener.cacheHit~~");
-            super.cacheHit(call, response);
-        }
-
-        @Override
-        public void cacheMiss(@NotNull Call call) {
-            System.out.println("~~EventListener.cacheMiss~~");
-            super.cacheMiss(call);
-        }
-
-        @Override
-        public void callEnd(@NotNull Call call) {
-            System.out.println("~~EventListener.callEnd~~");
-            super.callEnd(call);
-        }
-
-        @Override
-        public void callFailed(@NotNull Call call, @NotNull IOException ioe) {
-            System.out.println("~~EventListener.callFailed~~");
-            super.callFailed(call, ioe);
-        }
-
-        @Override
-        public void callStart(@NotNull Call call) {
-            System.out.println("~~EventListener.callStart~~");
-            super.callStart(call);
-        }
-
-        @Override
-        public void canceled(@NotNull Call call) {
-            System.out.println("~~EventListener.canceled~~");
-            super.canceled(call);
-        }
-
-        @Override
-        public void connectEnd(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, @Nullable Protocol protocol) {
-            System.out.println("~~EventListener.connectEnd~~");
-            super.connectEnd(call, inetSocketAddress, proxy, protocol);
-        }
-
-        @Override
-        public void connectFailed(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy, @Nullable Protocol protocol, @NotNull IOException ioe) {
-            System.out.println("~~EventListener.connectFailed~~");
-            System.out.println("call = " + call + ", inetSocketAddress = " + inetSocketAddress + ", proxy = " + proxy + ", protocol = " + protocol + ", ioe = " + ioe);
-            super.connectFailed(call, inetSocketAddress, proxy, protocol, ioe);
-        }
-
-        @Override
-        public void connectStart(@NotNull Call call, @NotNull InetSocketAddress inetSocketAddress, @NotNull Proxy proxy) {
-            System.out.println("~~EventListener.connectStart~~");
-            super.connectStart(call, inetSocketAddress, proxy);
-        }
-
-        @Override
-        public void connectionAcquired(@NotNull Call call, @NotNull Connection connection) {
-            System.out.println("~~EventListener.connectionAcquired~~");
-            super.connectionAcquired(call, connection);
-        }
-
-        @Override
-        public void connectionReleased(@NotNull Call call, @NotNull Connection connection) {
-            System.out.println("~~EventListener.connectionReleased~~");
-            super.connectionReleased(call, connection);
-        }
-
-        @Override
-        public void dnsEnd(@NotNull Call call, @NotNull String domainName, @NotNull List<InetAddress> inetAddressList) {
-            System.out.println("~~EventListener.dnsEnd~~");
-            super.dnsEnd(call, domainName, inetAddressList);
-        }
-
-        @Override
-        public void dnsStart(@NotNull Call call, @NotNull String domainName) {
-            System.out.println("~~EventListener.dnsStart~~");
-            super.dnsStart(call, domainName);
-        }
-
-        @Override
-        public void proxySelectEnd(@NotNull Call call, @NotNull HttpUrl url, @NotNull List<Proxy> proxies) {
-            System.out.println("~~EventListener.proxySelectEnd~~");
-            super.proxySelectEnd(call, url, proxies);
-        }
-
-        @Override
-        public void proxySelectStart(@NotNull Call call, @NotNull HttpUrl url) {
-            System.out.println("~~EventListener.proxySelectStart~~");
-            super.proxySelectStart(call, url);
-        }
-
-        @Override
-        public void requestBodyEnd(@NotNull Call call, long byteCount) {
-            System.out.println("~~EventListener.requestBodyEnd~~");
-            super.requestBodyEnd(call, byteCount);
-        }
-
-        @Override
-        public void requestBodyStart(@NotNull Call call) {
-            System.out.println("~~EventListener.requestBodyStart~~");
-            super.requestBodyStart(call);
-        }
-
-        @Override
-        public void requestFailed(@NotNull Call call, @NotNull IOException ioe) {
-            System.out.println("~~EventListener.requestFailed~~");
-            super.requestFailed(call, ioe);
-        }
-
-        @Override
-        public void requestHeadersEnd(@NotNull Call call, @NotNull Request request) {
-            System.out.println("~~EventListener.requestHeadersEnd~~");
-            super.requestHeadersEnd(call, request);
-        }
-
-        @Override
-        public void requestHeadersStart(@NotNull Call call) {
-            System.out.println("~~EventListener.requestHeadersStart~~");
-            super.requestHeadersStart(call);
-        }
-
-        @Override
-        public void responseBodyEnd(@NotNull Call call, long byteCount) {
-            System.out.println("~~EventListener.responseBodyEnd~~");
-            super.responseBodyEnd(call, byteCount);
-        }
-
-        @Override
-        public void responseBodyStart(@NotNull Call call) {
-            System.out.println("~~EventListener.responseBodyStart~~");
-            super.responseBodyStart(call);
-        }
-
-        @Override
-        public void responseFailed(@NotNull Call call, @NotNull IOException ioe) {
-            System.out.println("~~EventListener.responseFailed~~");
-            super.responseFailed(call, ioe);
-        }
-
-        @Override
-        public void responseHeadersEnd(@NotNull Call call, @NotNull Response response) {
-            System.out.println("~~EventListener.responseHeadersEnd~~");
-            super.responseHeadersEnd(call, response);
-        }
-
-        @Override
-        public void responseHeadersStart(@NotNull Call call) {
-            System.out.println("~~EventListener.responseHeadersStart~~");
-            super.responseHeadersStart(call);
-        }
-
-        @Override
-        public void satisfactionFailure(@NotNull Call call, @NotNull Response response) {
-            System.out.println("~~EventListener.satisfactionFailure~~");
-            super.satisfactionFailure(call, response);
-        }
-
-        @Override
-        public void secureConnectEnd(@NotNull Call call, @Nullable Handshake handshake) {
-            System.out.println("~~EventListener.secureConnectEnd~~");
-            super.secureConnectEnd(call, handshake);
-        }
-
-        @Override
-        public void secureConnectStart(@NotNull Call call) {
-            System.out.println("~~EventListener.secureConnectStart~~");
-            super.secureConnectStart(call);
-        }
 
     }
 
